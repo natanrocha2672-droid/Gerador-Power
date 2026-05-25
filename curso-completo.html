@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>O Código da Agulha — Curso Completo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/curso-style.css" />
+</head>
+<body>
+  <div id="preload" class="preload">
+    <div class="preload-card">
+      <h1>O Código da Agulha</h1>
+      <p>Pré-carregando o curso completo, os 30 módulos e a apresentação automática.</p>
+      <div class="meter"><span id="loadbar"></span></div>
+      <small id="loadtext">0%</small>
+    </div>
+  </div>
+
+  <header class="topbar">
+    <div class="brand"><b>ATELIÊ DE LEITURA</b><small>Apresentação automática + OpenAI TTS em português BR</small></div>
+    <div class="controls">
+      <select id="voice"><option value="coral">Coral</option><option value="nova">Nova</option><option value="shimmer">Shimmer</option><option value="alloy">Alloy</option><option value="onyx">Onyx</option></select>
+      <button id="presentBtn">Pausar apresentação</button>
+      <button id="prevBtn">◀</button>
+      <button id="audioBtn">Ouvir</button>
+      <button id="stopBtn">■</button>
+      <button id="nextBtn">▶</button>
+    </div>
+    <div class="progress"><span>Curso</span><i><em id="coursebar"></em></i><span id="pct">0%</span></div>
+    <p id="status">A apresentação visual inicia sozinha. O áudio pode exigir o primeiro toque por regra do navegador.</p>
+  </header>
+
+  <section class="hero" id="hero">
+    <div class="hero-copy">
+      <span>Curso completo pré-carregado</span>
+      <h1>O Código da Agulha</h1>
+      <p>30 módulos de bordado, da história global à criação autoral, com imagens artesanais geradas para ilustrar o curso, rolagem automática e narração neural.</p>
+      <div class="stats"><b>30 módulos</b><b>30k+ caracteres por módulo</b><b>modo apresentação</b></div>
+    </div>
+    <figure class="hero-art"><img src="/assets/img/hero.svg" alt="Capa ilustrada de bordado" /></figure>
+  </section>
+
+  <main class="layout">
+    <aside>
+      <input id="search" placeholder="Pesquisar módulo..." />
+      <nav id="nav"></nav>
+    </aside>
+    <section class="content">
+      <section class="now">
+        <small>Apresentação automática</small>
+        <h2 id="slideTitle"></h2>
+        <p id="slideText"></p>
+        <div class="meter"><span id="slidebar"></span></div>
+      </section>
+      <section class="gallery" id="gallery"></section>
+      <section id="modules"></section>
+    </section>
+  </main>
+
+  <audio id="audio"></audio>
+  <script src="/curso-data-01.js"></script>
+  <script src="/curso-data-02.js"></script>
+  <script src="/curso-ui.js"></script>
+</body>
+</html>
