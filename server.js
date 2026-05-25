@@ -47,7 +47,7 @@ function readBody(req, limit = 1_000_000) {
 function stripHtml(html) {
   return String(html || '')
     .replace(/<br\s*\/?\s*>/gi, '\n')
-    .replace(/<\/(p|h1|h2|h3|li|div)>/gi, '\n')
+    .replace(/<\/(p|h1|h2|h3|li|div|section|article)>/gi, '\n')
     .replace(/<[^>]+>/g, ' ')
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
@@ -57,48 +57,55 @@ function stripHtml(html) {
     .replace(/[ \t]{2,}/g, ' ')
     .trim();
 }
+function parseCourseFile(text) {
+  if (!text) return [];
+  try {
+    const start = text.indexOf('[');
+    const end = text.lastIndexOf(']');
+    if (start >= 0 && end > start) return JSON.parse(text.slice(start, end + 1));
+  } catch (_) {}
+  try {
+    const sandbox = { COURSE_MODULES: null, COURSE_MODULES_FULL: null };
+    sandbox.window = sandbox;
+    const fn = new Function('window', 'COURSE_MODULES', 'COURSE_MODULES_FULL', text + '\n;return window.COURSE_MODULES_FULL || window.COURSE_MODULES || COURSE_MODULES_FULL || COURSE_MODULES || [];');
+    const arr = fn(sandbox, sandbox.COURSE_MODULES, sandbox.COURSE_MODULES_FULL);
+    return Array.isArray(arr) ? arr : [];
+  } catch (e) {
+    console.error('Falha ao interpretar arquivo do curso:', e.message);
+    return [];
+  }
+}
 function loadCourse() {
   if (COURSE_CACHE) return COURSE_CACHE;
   const candidates = ['curso-data-full.js', 'curso-html-data.js', 'curso-html-data-compact.js'];
   let text = '';
+  let source = '';
   for (const file of candidates) {
     const p = path.join(ROOT, file);
     if (fs.existsSync(p)) {
       text = fs.readFileSync(p, 'utf8');
+      source = file;
       break;
     }
   }
-  if (!text) {
-    COURSE_CACHE = [];
-    return COURSE_CACHE;
-  }
-  const start = text.indexOf('[');
-  const end = text.lastIndexOf(']');
-  if (start < 0 || end < 0) {
-    COURSE_CACHE = [];
-    return COURSE_CACHE;
-  }
-  try {
-    const arr = JSON.parse(text.slice(start, end + 1));
-    COURSE_CACHE = arr.map((m, i) => {
-      const content = stripHtml(m.content || m.body || m.html || m.summary || '');
-      const summary = stripHtml(m.summary || content.slice(0, 600));
-      const imageDescription = stripHtml(m.imageDescription || (Array.isArray(m.imagePrompts) ? m.imagePrompts.join('\n') : '') || 'bordado artesanal detalhado');
-      const imageQueries = Array.isArray(m.imageQueries) ? m.imageQueries : [m.imageQuery || imageDescription || m.title || 'embroidery'];
-      return {
-        id: Number(m.id || i + 1),
-        title: stripHtml(m.title || `Módulo ${i + 1}`).replace(/^Curso de Bordado - /, ''),
-        summary,
-        content,
-        imageDescription,
-        imageQueries,
-        charCount: content.length
-      };
-    });
-  } catch (e) {
-    console.error('Erro ao carregar curso:', e);
-    COURSE_CACHE = [];
-  }
+  const arr = parseCourseFile(text);
+  COURSE_CACHE = arr.map((m, i) => {
+    const content = stripHtml(m.content || m.body || m.html || m.apostila || m.summary || '');
+    const summary = stripHtml(m.summary || content.slice(0, 600));
+    const imageDescription = stripHtml(m.imageDescription || m.imagePrompt || (Array.isArray(m.imagePrompts) ? m.imagePrompts.join('\n') : '') || 'bordado artesanal detalhado');
+    const imageQueries = Array.isArray(m.imageQueries) ? m.imageQueries : [m.imageQuery || imageDescription || m.title || 'embroidery'];
+    return {
+      id: Number(m.id || i + 1),
+      title: stripHtml(m.title || `Módulo ${i + 1}`).replace(/^Curso de Bordado - /, ''),
+      summary,
+      content,
+      imageDescription,
+      imageQueries,
+      charCount: content.length,
+      source
+    };
+  });
+  console.log(`Curso carregado: ${COURSE_CACHE.length} módulos de ${source || 'nenhum arquivo'}`);
   return COURSE_CACHE;
 }
 function extractText(d) {
@@ -110,25 +117,23 @@ function extractText(d) {
   }
   return a.join('\n').trim();
 }
-
 async function handleCourse(req, res) {
   const u = new URL(req.url, `http://${req.headers.host}`);
   const course = loadCourse();
   if (u.pathname === '/api/course/index') {
     return json(res, 200, {
       count: course.length,
-      modules: course.map(m => ({ id: m.id, title: m.title, summary: m.summary.slice(0, 360), charCount: m.charCount }))
-    }, 'public, max-age=300, s-maxage=3600');
+      modules: course.map(m => ({ id: m.id, title: m.title, summary: m.summary.slice(0, 360), charCount: m.charCount, source: m.source }))
+    }, 'public, max-age=60, s-maxage=300');
   }
   if (u.pathname === '/api/course/module') {
     const id = Number(u.searchParams.get('id') || 1);
     const m = course.find(x => x.id === id) || course[id - 1];
-    if (!m) return json(res, 404, { error: 'Módulo não encontrado.' });
-    return json(res, 200, m, 'public, max-age=300, s-maxage=3600');
+    if (!m) return json(res, 404, { error: 'Módulo não encontrado.', count: course.length });
+    return json(res, 200, m, 'public, max-age=60, s-maxage=300');
   }
   return json(res, 404, { error: 'Endpoint de curso não encontrado.' });
 }
-
 async function handlePexels(req, res) {
   if (req.method !== 'GET') return json(res, 405, { error: 'Use GET.' });
   if (!process.env.PEXELS_API_KEY) return json(res, 500, { error: 'PEXELS_API_KEY não configurada.' });
@@ -148,7 +153,6 @@ async function handlePexels(req, res) {
     return json(res, 500, { error: e.message });
   }
 }
-
 async function handleTTS(req, res) {
   if (req.method !== 'POST') return json(res, 405, { error: 'Use POST.' });
   if (!process.env.OPENAI_API_KEY) return json(res, 500, { error: 'OPENAI_API_KEY não configurada.' });
@@ -167,7 +171,6 @@ async function handleTTS(req, res) {
     res.end(a);
   } catch (e) { json(res, 500, { error: e.message }); }
 }
-
 async function handleAtelier(req, res) {
   if (req.method !== 'POST') return json(res, 405, { error: 'Use POST.' });
   if (!process.env.OPENAI_API_KEY) return json(res, 500, { error: 'OPENAI_API_KEY não configurada.' });
@@ -182,7 +185,6 @@ async function handleAtelier(req, res) {
     return json(res, 200, { text: extractText(d) || 'Não consegui responder agora.' });
   } catch (e) { return json(res, 500, { error: e.message }); }
 }
-
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml' };
 function serve(req, res) {
   const u = new URL(req.url, `http://${req.headers.host}`);
@@ -196,7 +198,6 @@ function serve(req, res) {
     res.end(d);
   });
 }
-
 http.createServer((req, res) => {
   if (req.url.startsWith('/api/course/')) return handleCourse(req, res);
   if (req.url.startsWith('/api/pexels')) return handlePexels(req, res);
