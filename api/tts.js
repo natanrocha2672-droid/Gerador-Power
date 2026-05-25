@@ -21,10 +21,6 @@ function sanitizeSpeed(value) {
   return Math.min(1.15, Math.max(0.85, n));
 }
 
-function prepareBrazilianNarration(text) {
-  return `Leia o texto a seguir em português brasileiro natural, como uma professora brasileira de curso artesanal narrando uma aula gravada. Use pausas curtas entre frases, entonação humana e calorosa, sem soar como leitura robótica. Texto: ${text}`;
-}
-
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Use POST." });
@@ -35,12 +31,11 @@ module.exports = async function handler(req, res) {
   }
 
   const body = req.body || {};
-  const cleanInput = sanitizeText(body.text);
-  const input = prepareBrazilianNarration(cleanInput);
+  const input = sanitizeText(body.text);
   const voice = sanitizeVoice(body.voice);
   const speed = sanitizeSpeed(body.speed);
 
-  if (!cleanInput) {
+  if (!input) {
     return res.status(400).json({ error: "Texto vazio para narração." });
   }
 
@@ -57,7 +52,7 @@ module.exports = async function handler(req, res) {
         voice,
         response_format: "mp3",
         speed,
-        instructions: "Português do Brasil. Narração de aula artesanal, natural, acolhedora e humana. Evite voz robótica, metálica ou monocórdia. Use pausas naturais, variação leve de entonação e pronúncia brasileira clara."
+        instructions: "Narre somente o texto recebido, sem ler estas instruções. Português do Brasil. Narração de aula artesanal, natural, acolhedora e humana. Evite voz robótica, metálica ou monocórdia. Use pausas naturais, variação leve de entonação e pronúncia brasileira clara."
       })
     });
 
