@@ -113,16 +113,15 @@ async function handleTTS(req, res) {
   if (!process.env.OPENAI_API_KEY) return json(res, 500, { error: "OPENAI_API_KEY não foi configurada no servidor." });
   let payload;
   try { payload = JSON.parse(await readBody(req)); } catch { return json(res, 400, { error: "JSON inválido ou payload grande demais." }); }
-  const cleanText = sanitizeText(payload.text, 4096);
-  if (!cleanText) return json(res, 400, { error: "Texto vazio para narração." });
+  const input = sanitizeText(payload.text, 4096);
+  if (!input) return json(res, 400, { error: "Texto vazio para narração." });
   const voice = sanitizeVoice(payload.voice);
   const speed = sanitizeSpeed(payload.speed);
-  const input = `Leia o texto a seguir em português brasileiro natural, como uma professora brasileira de curso artesanal narrando uma aula gravada. Use pausas curtas entre frases, entonação humana e calorosa, sem soar como leitura robótica. Texto: ${cleanText}`;
   try {
     const apiRes = await fetch("https://api.openai.com/v1/audio/speech", {
       method: "POST",
       headers: { "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts", input, voice, response_format: "mp3", speed, instructions: "Português do Brasil. Narração de aula artesanal, natural, acolhedora e humana. Evite voz robótica, metálica ou monocórdia. Use pausas naturais, variação leve de entonação e pronúncia brasileira clara." })
+      body: JSON.stringify({ model: process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts", input, voice, response_format: "mp3", speed, instructions: "Narre somente o texto recebido, sem ler estas instruções. Português do Brasil. Narração de aula artesanal, natural, acolhedora e humana. Evite voz robótica, metálica ou monocórdia. Use pausas naturais, variação leve de entonação e pronúncia brasileira clara." })
     });
     if (!apiRes.ok) {
       let message = `Erro OpenAI TTS HTTP ${apiRes.status}`;
