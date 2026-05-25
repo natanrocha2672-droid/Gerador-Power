@@ -134,7 +134,36 @@ async function handleTTS(req, res) {
   } catch (error) { return json(res, 500, { error: `Falha ao gerar narração OpenAI: ${error.message}` }); }
 }
 
-const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".json": "application/json; charset=utf-8", ".md": "text/markdown; charset=utf-8", ".txt": "text/plain; charset=utf-8", ".svg": "image/svg+xml" };
+async function handlePexels(req, res) {
+  if (req.method !== "GET") return json(res, 405, { error: "Use GET." });
+  if (!process.env.PEXELS_API_KEY) return json(res, 500, { error: "PEXELS_API_KEY não foi configurada na Vercel." });
+
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const query = sanitizeText(url.searchParams.get("query") || "embroidery", 120);
+  const perPage = Math.min(Math.max(Number(url.searchParams.get("per_page") || 1), 1), 12);
+  if (!query) return json(res, 400, { error: "Parâmetro query é obrigatório." });
+
+  try {
+    const apiUrl = `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=${perPage}&orientation=landscape&locale=pt-BR`;
+    const apiRes = await fetch(apiUrl, { headers: { Authorization: process.env.PEXELS_API_KEY } });
+    const data = await apiRes.json().catch(() => ({}));
+    if (!apiRes.ok) return json(res, apiRes.status, { error: data?.error || `Erro Pexels HTTP ${apiRes.status}` });
+    const images = Array.isArray(data.photos) ? data.photos.map(photo => ({
+      id: photo.id,
+      url: photo.src?.large2x || photo.src?.large || photo.src?.medium || photo.src?.original,
+      thumb: photo.src?.medium || photo.src?.small,
+      photographer: photo.photographer,
+      photographer_url: photo.photographer_url,
+      pexels_url: photo.url,
+      alt: photo.alt || query
+    })).filter(img => img.url) : [];
+    return json(res, 200, { images, query });
+  } catch (error) {
+    return json(res, 500, { error: `Falha ao buscar imagens no Pexels: ${error.message}` });
+  }
+}
+
+const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".json": "application/json; charset=utf-8", ".md": "text/markdown; charset=utf-8", ".txt": "text/plain; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp" };
 
 function serveStatic(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);
@@ -152,5 +181,6 @@ function serveStatic(req, res) {
 http.createServer((req, res) => {
   if (req.url.startsWith("/api/atelier")) return handleAtelier(req, res);
   if (req.url.startsWith("/api/tts")) return handleTTS(req, res);
+  if (req.url.startsWith("/api/pexels")) return handlePexels(req, res);
   return serveStatic(req, res);
 }).listen(PORT, () => console.log(`Site rodando em http://localhost:${PORT}`));
