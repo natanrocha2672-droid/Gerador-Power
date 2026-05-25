@@ -1,5 +1,5 @@
 const BUILT_IN_VOICES = new Set([
-  "alloy", "ash", "ballad", "coral", "echo", "fable", "onyx", "nova", "sage", "shimmer", "verse", "marin", "cedar"
+  "alloy", "ash", "ballad", "coral", "echo", "fable", "onyx", "nova", "sage", "shimmer", "verse"
 ]);
 
 function sanitizeText(value, max = 4096) {
@@ -18,7 +18,7 @@ function sanitizeVoice(value) {
 function sanitizeSpeed(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return 0.95;
-  return Math.min(1.25, Math.max(0.85, n));
+  return Math.min(1.15, Math.max(0.85, n));
 }
 
 function prepareBrazilianNarration(text) {
