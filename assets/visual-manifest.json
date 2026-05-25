@@ -1,0 +1,15 @@
+{
+  "course": "O Codigo da Agulha",
+  "status": "Pacote visual gerado no ChatGPT",
+  "hero": "o_codigo_da_agulha_bordado_artesanal.png",
+  "moduleImagePlan": [
+    {"range":"01-03","theme":"historia global do bordado"},
+    {"range":"04-06","theme":"ferramentas, tecidos e linhas"},
+    {"range":"07-10","theme":"pontos basicos e sampler"},
+    {"range":"11-14","theme":"sashiko e kantha"},
+    {"range":"15-18","theme":"ponto cruz e bordado contado"},
+    {"range":"19-22","theme":"bordado floral e composicao"},
+    {"range":"23-26","theme":"acabamento, portfolio e produto"},
+    {"range":"27-30","theme":"projeto final e colecao"}
+  ]
+}
