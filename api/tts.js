@@ -3,18 +3,26 @@ const BUILT_IN_VOICES = new Set([
 ]);
 
 function sanitizeText(value, max = 4096) {
-  return String(value || "").replace(/\u0000/g, "").trim().slice(0, max);
+  return String(value || "")
+    .replace(/\u0000/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, max);
 }
 
 function sanitizeVoice(value) {
   const voice = sanitizeText(value, 40).toLowerCase();
-  return BUILT_IN_VOICES.has(voice) ? voice : "marin";
+  return BUILT_IN_VOICES.has(voice) ? voice : "coral";
 }
 
 function sanitizeSpeed(value) {
   const n = Number(value);
-  if (!Number.isFinite(n)) return 1;
-  return Math.min(1.6, Math.max(0.8, n));
+  if (!Number.isFinite(n)) return 0.95;
+  return Math.min(1.25, Math.max(0.85, n));
+}
+
+function prepareBrazilianNarration(text) {
+  return `Leia o texto a seguir em português brasileiro natural, como uma professora brasileira de curso artesanal narrando uma aula gravada. Use pausas curtas entre frases, entonação humana e calorosa, sem soar como leitura robótica. Texto: ${text}`;
 }
 
 module.exports = async function handler(req, res) {
@@ -27,11 +35,12 @@ module.exports = async function handler(req, res) {
   }
 
   const body = req.body || {};
-  const input = sanitizeText(body.text);
+  const cleanInput = sanitizeText(body.text);
+  const input = prepareBrazilianNarration(cleanInput);
   const voice = sanitizeVoice(body.voice);
   const speed = sanitizeSpeed(body.speed);
 
-  if (!input) {
+  if (!cleanInput) {
     return res.status(400).json({ error: "Texto vazio para narração." });
   }
 
@@ -48,7 +57,7 @@ module.exports = async function handler(req, res) {
         voice,
         response_format: "mp3",
         speed,
-        instructions: "Narre em português brasileiro padrão, com dicção clara, ritmo didático, acolhedor e natural. Pronuncie termos técnicos de bordado com calma."
+        instructions: "Português do Brasil. Narração de aula artesanal, natural, acolhedora e humana. Evite voz robótica, metálica ou monocórdia. Use pausas naturais, variação leve de entonação e pronúncia brasileira clara."
       })
     });
 
@@ -64,6 +73,7 @@ module.exports = async function handler(req, res) {
     const audio = Buffer.from(await apiRes.arrayBuffer());
     res.setHeader("Content-Type", "audio/mpeg");
     res.setHeader("Cache-Control", "no-store");
+    res.setHeader("X-OpenAI-TTS-Voice", voice);
     return res.status(200).send(audio);
   } catch (error) {
     return res.status(500).json({ error: `Falha ao gerar narração OpenAI: ${error.message}` });
