@@ -168,7 +168,7 @@ const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; cha
 function serveStatic(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);
   let pathname = decodeURIComponent(url.pathname);
-  if (pathname === "/") pathname = "/index.html";
+  if (pathname === "/" || pathname === "/curso") pathname = "/curso-completo.html";
   const filePath = path.normalize(path.join(ROOT, pathname));
   if (!filePath.startsWith(ROOT)) { res.writeHead(403); return res.end("Forbidden"); }
   fs.readFile(filePath, (err, data) => {
