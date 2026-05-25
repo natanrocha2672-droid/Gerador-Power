@@ -36,6 +36,8 @@ OPENAI_MODEL="gpt-5.5"
 
 Configure `OPENAI_API_KEY` e `OPENAI_MODEL` nas variáveis de ambiente da Vercel. A função serverless fica em `api/atelier.js`.
 
+Último disparo de deploy via Git: 2026-05-25.
+
 ## Segurança
 
 Nunca coloque a chave da OpenAI no `index.html` ou em JavaScript público. Todas as chamadas passam pelo backend.
