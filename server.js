@@ -1,9 +1,11 @@
 const http=require('http');
 const fs=require('fs');
 const path=require('path');
+const crypto=require('crypto');
 const ROOT=__dirname;
 const PORT=process.env.PORT||3000;
 const imageCache=new Map();
+const audioCache=new Map();
 
 function loadEnv(){
   const p=path.join(ROOT,'.env');
@@ -24,6 +26,7 @@ loadEnv();
 function clean(v,max=4000){return String(v||'').replace(/\u0000/g,'').replace(/\s+/g,' ').trim().slice(0,max)}
 function sendJson(res,status,data,cache='no-store'){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':cache});res.end(JSON.stringify(data))}
 function readBody(req,limit=1e6){return new Promise((ok,bad)=>{let b='';req.on('data',c=>{b+=c;if(Buffer.byteLength(b)>limit){bad(new Error('Payload muito grande'));req.destroy()}});req.on('end',()=>ok(b));req.on('error',bad)})}
+function hash(v){return crypto.createHash('sha256').update(String(v)).digest('hex')}
 
 const BASE=[
 ['Arqueologia Têxtil e as Origens do Bordado','ancient bone needle textile','Como o bordado nasce entre função, proteção, status e ritual.'],
@@ -140,12 +143,32 @@ async function handleCourse(req,res){
 
 async function handlePexels(req,res){const u=new URL(req.url,`http://${req.headers.host}`);return sendJson(res,200,await searchPexels(u.searchParams.get('query')||'embroidery',u.searchParams.get('per_page')||1),'public, max-age=86400')}
 
+async function makeSpeechBuffer(input,voice,speed){
+  const key=hash(JSON.stringify({input,voice,speed,model:process.env.OPENAI_TTS_MODEL||'gpt-4o-mini-tts'}));
+  if(audioCache.has(key))return {buffer:audioCache.get(key),cached:true,key};
+  const r=await fetch('https://api.openai.com/v1/audio/speech',{method:'POST',headers:{Authorization:`Bearer ${process.env.OPENAI_API_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({model:process.env.OPENAI_TTS_MODEL||'gpt-4o-mini-tts',input,voice,response_format:'mp3',speed,instructions:'Português do Brasil natural e didático.'})});
+  if(!r.ok)throw new Error('Erro TTS '+r.status);
+  const buffer=Buffer.from(await r.arrayBuffer());
+  audioCache.set(key,buffer);
+  if(audioCache.size>60)audioCache.delete(audioCache.keys().next().value);
+  return {buffer,cached:false,key};
+}
+
 async function handleTTS(req,res){
-  if(req.method!=='POST')return sendJson(res,405,{error:'Use POST'});
   if(!process.env.OPENAI_API_KEY)return sendJson(res,500,{error:'OPENAI_API_KEY não configurada'});
+  if(req.method==='GET'){
+    const u=new URL(req.url,`http://${req.headers.host}`);
+    if(u.pathname==='/api/tts/status')return sendJson(res,200,{cached:audioCache.size,mode:'memory-cache'});
+    return sendJson(res,405,{error:'Use POST para gerar áudio'});
+  }
+  if(req.method!=='POST')return sendJson(res,405,{error:'Use POST'});
   let p;try{p=JSON.parse(await readBody(req))}catch{return sendJson(res,400,{error:'JSON inválido'})}
-  const input=clean(p.text,4096);
-  try{const r=await fetch('https://api.openai.com/v1/audio/speech',{method:'POST',headers:{Authorization:`Bearer ${process.env.OPENAI_API_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({model:process.env.OPENAI_TTS_MODEL||'gpt-4o-mini-tts',input,voice:p.voice||'coral',response_format:'mp3',speed:Number(p.speed)||.95,instructions:'Português do Brasil natural e didático.'})});if(!r.ok)return sendJson(res,r.status,{error:'Erro TTS '+r.status});const a=Buffer.from(await r.arrayBuffer());res.writeHead(200,{'Content-Type':'audio/mpeg','Cache-Control':'no-store'});res.end(a)}catch(e){sendJson(res,500,{error:e.message})}
+  const input=clean(p.text,4096),voice=p.voice||'coral',speed=Number(p.speed)||.95;
+  try{
+    const result=await makeSpeechBuffer(input,voice,speed);
+    res.writeHead(200,{'Content-Type':'audio/mpeg','Cache-Control':'public, max-age=86400','X-Audio-Cache':result.cached?'HIT':'MISS','X-Audio-Key':result.key.slice(0,16)});
+    res.end(result.buffer);
+  }catch(e){sendJson(res,500,{error:e.message})}
 }
 
 function extract(d){if(d.output_text)return d.output_text;return (d.output||[]).flatMap(o=>(o.content||[]).map(c=>c.text||c.output_text||'')).join('\n')}
