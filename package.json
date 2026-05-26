@@ -1,0 +1,9 @@
+{
+  "name": "pexels-mcp-vercel",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "build": "echo 'Python MCP app uses Vercel Functions'"
+  }
+}
