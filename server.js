@@ -8,51 +8,18 @@ const PORT=process.env.PORT||3000;
 const imageCache=new Map();
 const audioCache=new Map();
 let courseCache=null;
-
-function loadEnv(){const p=path.join(ROOT,'.env');if(!fs.existsSync(p))return;for(const line of fs.readFileSync(p,'utf8').split(/\r?\n/)){const t=line.trim();if(!t||t.startsWith('#'))continue;const i=t.indexOf('=');if(i<0)continue;const k=t.slice(0,i).trim();let v=t.slice(i+1).trim();if((v.startsWith('"')&&v.endsWith('"'))||(v.startsWith("'")&&v.endsWith("'")))v=v.slice(1,-1);if(!process.env[k])process.env[k]=v}}
-loadEnv();
-
+function loadEnv(){const p=path.join(ROOT,'.env');if(!fs.existsSync(p))return;for(const line of fs.readFileSync(p,'utf8').split(/\r?\n/)){const t=line.trim();if(!t||t.startsWith('#'))continue;const i=t.indexOf('=');if(i<0)continue;const k=t.slice(0,i).trim();let v=t.slice(i+1).trim();if((v.startsWith('"')&&v.endsWith('"'))||(v.startsWith("'")&&v.endsWith("'")))v=v.slice(1,-1);if(!process.env[k])process.env[k]=v}}loadEnv();
 function clean(v,max=4000){return String(v||'').replace(/\u0000/g,'').replace(/\s+/g,' ').trim().slice(0,max)}
 function sendJson(res,status,data,cache='no-store'){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':cache});res.end(JSON.stringify(data))}
 function readBody(req,limit=1e6){return new Promise((ok,bad)=>{let b='';req.on('data',c=>{b+=c;if(Buffer.byteLength(b)>limit){bad(new Error('Payload muito grande'));req.destroy()}});req.on('end',()=>ok(b));req.on('error',bad)})}
 function hash(v){return crypto.createHash('sha256').update(String(v)).digest('hex')}
 function pexelsKey(){let k=(process.env.PEXELS_API_KEY||process.env.PEXELS_KEY||process.env.PEXELS||'').trim();k=k.replace(/^Bearer\s+/i,'').replace(/^PEXELS_API_KEY\s*=\s*/i,'').trim();if((k.startsWith('"')&&k.endsWith('"'))||(k.startsWith("'")&&k.endsWith("'")))k=k.slice(1,-1).trim();return k}
-function svgData(title){const safe=String(title||'Imagem do módulo').replace(/[<>&]/g,'');const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760"><defs><linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#eadfd1"/><stop offset=".55" stop-color="#c85a42"/><stop offset="1" stop-color="#0f5f4d"/></linearGradient><pattern id="p" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M0 30 Q30 0 60 30 Q30 60 0 30" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="3"/></pattern></defs><rect width="1200" height="760" fill="url(#g)"/><rect width="1200" height="760" fill="url(#p)"/><text x="70" y="590" font-family="Georgia,serif" font-size="46" font-weight="700" fill="white">${safe.slice(0,70)}</text><text x="70" y="655" font-family="Arial" font-size="26" fill="#fff3e8">Imagem ilustrativa do curso de bordado</text></svg>`;return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)}
-
+function svgData(title){const safe=String(title||'Imagem do módulo').replace(/[<>&]/g,'');const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760"><defs><linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#eadfd1"/><stop offset=".55" stop-color="#c85a42"/><stop offset="1" stop-color="#0f5f4d"/></linearGradient></defs><rect width="1200" height="760" fill="url(#g)"/><text x="70" y="590" font-family="Georgia,serif" font-size="46" font-weight="700" fill="white">${safe.slice(0,70)}</text><text x="70" y="655" font-family="Arial" font-size="26" fill="#fff3e8">Imagem ilustrativa do curso de bordado</text></svg>`;return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)}
 const FALLBACK_TITLES=['Arqueologia Têxtil e as Origens do Bordado','Opus Anglicanum e Sacralidade Medieval','Renascimento, Modelbooks e Blackwork','Era Industrial e Máquinas de Bordar','Fibras Naturais e Sintéticas','Ergonomia e Bastidor Profissional','Morfologia dos Pontos','Needle Painting e Degradê','Bordado Branco e Hardanger','Crewel e Estilo Jacobino','Goldwork I: Couching e Or Nué','Goldwork II: Relevo e Purl','Shisha e Espelhamento','Sashiko e Kogin','Zardosi Imperial','Lunéville e Tambour','Pedrarias e Paetês','Stumpwork e Bordado em Relevo','Bordado Brasileiro','Rendas de Agulha e Ponto de Veneza','Conservação e Restauro Têxtil','Design de Padrões','Digitalização e Bordado Computadorizado','Gestão de Ateliê','Curadoria e Exposição','Bordado na Arte Contemporânea','Materiais Não Convencionais','Alfaiataria e Bordado','Fotografia e Documentação Técnica','Projeto Final: Coleção Autoral'];
 function fallbackCourse(){return FALLBACK_TITLES.map((title,i)=>({id:i+1,title,summary:'Módulo do curso de bordado.',content:`${title}\n\nConteúdo real do curso ainda não carregado no backend.`,imageDescription:title,imageQueries:[title,'embroidery textile craft'],fallbackImage:svgData(title),charCount:title.length,source:'fallback'}))}
-function loadCourse(){
- if(courseCache)return courseCache;
- try{
-   const single=path.join(ROOT,'data','course-data.b64.00');
-   const parts=[];
-   if(fs.existsSync(single))parts.push(fs.readFileSync(single,'utf8'));
-   else{
-     const dir=path.join(ROOT,'data');
-     if(fs.existsSync(dir))for(const f of fs.readdirSync(dir).filter(x=>/^course-data\.b64\.\d+$/.test(x)).sort())parts.push(fs.readFileSync(path.join(dir,f),'utf8'));
-   }
-   if(!parts.length)throw new Error('Arquivo de curso não encontrado');
-   const b64=parts.join('').replace(/\s+/g,'');
-   const raw=zlib.gunzipSync(Buffer.from(b64,'base64')).toString('utf8');
-   const parsed=JSON.parse(raw);
-   const modules=(parsed.modules||parsed).map((m,i)=>({
-     id:Number(m.id||i+1),
-     title:m.title||FALLBACK_TITLES[i]||`Módulo ${i+1}`,
-     summary:m.summary||String(m.content||'').split(/\n+/).find(Boolean)||'',
-     content:String(m.content||''),
-     imageDescription:m.imageDescription||m.title||'',
-     imageQueries:m.imageQueries&&m.imageQueries.length?m.imageQueries:[m.title||'', 'embroidery textile craft'],
-     fallbackImage:m.fallbackImage||svgData(m.title||`Módulo ${i+1}`),
-     charCount:Number(m.charCount||String(m.content||'').length),
-     source:m.source||'uploaded-course-data'
-   })).filter(m=>m.id&&m.content);
-   if(modules.length<1)throw new Error('Curso vazio');
-   courseCache=modules;
-   return courseCache;
- }catch(e){console.error('Falha ao carregar course-data:',e.message);courseCache=fallbackCourse();return courseCache}
-}
+function readCourseB64(){const dir=path.join(ROOT,'data');if(!fs.existsSync(dir))throw new Error('Diretório data não encontrado');const files=fs.readdirSync(dir).filter(x=>/^course-data\.b64\.\d+$/.test(x)).sort();if(!files.length)throw new Error('Chunks course-data.b64.* não encontrados');return files.map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('').replace(/\s+/g,'')}
+function loadCourse(){if(courseCache)return courseCache;try{const raw=zlib.gunzipSync(Buffer.from(readCourseB64(),'base64')).toString('utf8');const parsed=JSON.parse(raw);const modules=(parsed.modules||parsed).map((m,i)=>({id:Number(m.id||i+1),title:m.title||FALLBACK_TITLES[i]||`Módulo ${i+1}`,summary:m.summary||String(m.content||'').split(/\n+/).find(Boolean)||'',content:String(m.content||''),imageDescription:m.imageDescription||m.title||'',imageQueries:m.imageQueries&&m.imageQueries.length?m.imageQueries:[m.title||'', 'embroidery textile craft'],fallbackImage:m.fallbackImage||svgData(m.title||`Módulo ${i+1}`),charCount:Number(m.charCount||String(m.content||'').length),source:m.source||'uploaded-course-data'})).filter(m=>m.id&&m.content);if(modules.length<1)throw new Error('Curso vazio');courseCache=modules;return courseCache}catch(e){console.error('Falha ao carregar course-data:',e.message);courseCache=fallbackCourse();return courseCache}}
 function course(){return loadCourse()}
-
 async function searchPexels(query,count=1){const q=clean(query||'embroidery textile craft',180);const n=Math.min(10,Math.max(1,Number(count)||1));const key='pexels:'+q.toLowerCase()+':'+n;if(imageCache.has(key))return imageCache.get(key);const fallback={query:q,images:[{url:svgData(q),thumb:svgData(q),photographer:'Fallback local',alt:q,fallback:true}],warning:''};const k=pexelsKey();if(!k){fallback.warning='PEXELS_API_KEY não configurada';imageCache.set(key,fallback);return fallback}try{const r=await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(q)}&per_page=${n}&orientation=landscape`,{headers:{Authorization:k}});const d=await r.json().catch(()=>({}));if(!r.ok){fallback.warning=d.error||'Erro Pexels '+r.status;imageCache.set(key,fallback);return fallback}const imgs=(d.photos||[]).map(p=>({url:p.src?.large2x||p.src?.large||p.src?.medium,thumb:p.src?.medium,photographer:p.photographer,alt:p.alt||q,source:p.url,fallback:false})).filter(x=>x.url);const data={query:q,images:imgs.length?imgs:fallback.images,warning:imgs.length?'':'Sem imagem no Pexels'};imageCache.set(key,data);return data}catch(e){fallback.warning=e.message;imageCache.set(key,fallback);return fallback}}
 async function imageForModule(id){const m=course().find(x=>x.id===Number(id))||course()[0];const queries=[...(m.imageQueries||[]),m.imageDescription,m.title,'embroidery textile craft'].filter(Boolean);for(const q of queries){const data=await searchPexels(q,1);if(data.images?.[0]&&!data.images[0].fallback)return {moduleId:m.id,moduleTitle:m.title,query:data.query,image:data.images[0],warning:''}}const data=await searchPexels(queries[0],1);return {moduleId:m.id,moduleTitle:m.title,query:data.query,image:data.images[0],warning:data.warning||'Usando fallback local'}}
 async function handleCourse(req,res){const u=new URL(req.url,`http://${req.headers.host}`);const c=course();if(u.pathname==='/api/course/index')return sendJson(res,200,{count:c.length,source:'uploaded-course-data',modules:c.map(m=>({id:m.id,title:m.title,summary:m.summary,charCount:m.charCount,source:m.source,imageEndpoint:`/api/course/image?id=${m.id}`}))},'no-store');if(u.pathname==='/api/course/module'){const id=Number(u.searchParams.get('id')||1),m=c.find(x=>x.id===id)||c[id-1];if(!m)return sendJson(res,404,{error:'Módulo não encontrado'});return sendJson(res,200,{...m,imageEndpoint:`/api/course/image?id=${m.id}`},'no-store')}if(u.pathname==='/api/course/image')return sendJson(res,200,await imageForModule(Number(u.searchParams.get('id')||1)),'public, max-age=86400');if(u.pathname==='/api/course/images'){const items=[];for(const m of c)items.push(await imageForModule(m.id));return sendJson(res,200,{count:items.length,items},'public, max-age=86400')}return sendJson(res,404,{error:'Endpoint não encontrado'})}
