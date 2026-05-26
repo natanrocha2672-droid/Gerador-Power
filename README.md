@@ -1,43 +1,30 @@
-# O Código da Agulha — Curso de Bordado com OpenAI
+# Pexels MCP na Vercel
 
-Site criado a partir do HTML de referência enviado, com módulos expandidos de bordado, leitor de voz, simulador em canvas e OpenAI Lab.
+Servidor MCP em Python para buscar fotos e vídeos no Pexels, pronto para deploy na Vercel.
 
-## Recursos
+## Arquivos principais
 
-- Curso expandido com módulos de bordado do básico ao avançado.
-- Leitor de voz no navegador usando Web Speech API.
-- Pesquisa e navegação lateral.
-- Simulador visual de pontos em canvas.
-- OpenAI Lab com geração de projeto, diagnóstico técnico, plano de estudo, quiz e expansão de módulos.
-- Backend seguro para não expor `OPENAI_API_KEY` no navegador.
-- Compatível com execução local em Node.js e deploy na Vercel.
+- `api/index.py`: app ASGI com servidor MCP e endpoints HTTP de teste.
+- `requirements.txt`: dependências Python.
+- `vercel.json`: configuração de função/rewrite para Vercel.
+- `.env.example`: exemplo da variável de ambiente necessária.
 
-## Rodar localmente
+## Variável obrigatória
 
-```bash
-cp .env.example .env
-npm start
-```
+Configure `PEXELS_API_KEY` no projeto da Vercel.
 
-Abra:
+## Endpoints
 
-```text
-http://localhost:3000
-```
+- Página inicial: `/`
+- MCP Streamable HTTP: `/mcp`
+- Teste de fotos: `/fotos?query=natureza&per_page=5`
+- Teste de vídeos: `/videos?query=cidade&per_page=3`
 
-## Variáveis de ambiente
+## Tools MCP
 
-```bash
-OPENAI_API_KEY="sua_chave_aqui"
-OPENAI_MODEL="gpt-5.5"
-```
+- `buscar_fotos(query: str, per_page: int = 10)`
+- `buscar_videos(query: str, per_page: int = 5)`
 
-## Deploy na Vercel
+## Deploy via GitHub
 
-Configure `OPENAI_API_KEY` e `OPENAI_MODEL` nas variáveis de ambiente da Vercel. A função serverless fica em `api/atelier.js`.
-
-Último disparo de deploy via Git: 2026-05-25.
-
-## Segurança
-
-Nunca coloque a chave da OpenAI no `index.html` ou em JavaScript público. Todas as chamadas passam pelo backend.
+Este branch pode ser importado/conectado na Vercel. Se o projeto já estiver conectado ao GitHub, cada push gera Preview Deploy automaticamente.
