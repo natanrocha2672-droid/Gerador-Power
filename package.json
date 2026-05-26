@@ -5,7 +5,12 @@
   "description": "Curso expandido de bordado com front-end HTML/Tailwind e backend OpenAI Responses API.",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "extract:course": "node scripts/extrair-pdf.js",
+    "build": "node scripts/extrair-pdf.js || node scripts/garantir-curso-extraido.js"
+  },
+  "dependencies": {
+    "pdf-parse": "^1.1.1"
   },
   "engines": {
     "node": ">=18"
