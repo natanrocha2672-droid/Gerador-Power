@@ -2,7 +2,16 @@
   "version": 2,
   "builds": [
     { "src": "*.html", "use": "@vercel/static" },
-    { "src": "server.js", "use": "@vercel/node", "config": { "includeFiles": "data/**" } }
+    {
+      "src": "server.js",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": [
+          "data/curso-extraido.json",
+          "course-data.generated.js"
+        ]
+      }
+    }
   ],
   "rewrites": [
     { "source": "/", "destination": "/curso-completo.html" },
