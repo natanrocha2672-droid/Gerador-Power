@@ -7,6 +7,7 @@
   "rewrites": [
     { "source": "/", "destination": "/curso-completo.html" },
     { "source": "/curso", "destination": "/curso-completo.html" },
-    { "source": "/gerador", "destination": "/gerador.html" }
+    { "source": "/gerador", "destination": "/gerador.html" },
+    { "source": "/api/:path*", "destination": "/server.js" }
   ]
 }
