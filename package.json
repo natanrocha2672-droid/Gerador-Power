@@ -7,7 +7,8 @@
     "start": "node server.js",
     "dev": "node server.js",
     "extract:course": "node scripts/extrair-pdf.js",
-    "build": "node scripts/extrair-pdf.js || node scripts/garantir-curso-extraido.js"
+    "build": "node scripts/extrair-pdf.js || node scripts/garantir-curso-extraido.js",
+    "vercel-build": "node build.js"
   },
   "dependencies": {
     "pdf-parse": "^1.1.1"
