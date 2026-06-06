@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     { "src": "*.html", "use": "@vercel/static" },
-    { "src": "server.js", "use": "@vercel/node" }
+    { "src": "server.js", "use": "@vercel/node", "config": { "includeFiles": ["data/**"] } }
   ],
   "rewrites": [
     { "source": "/", "destination": "/curso-completo.html" },
