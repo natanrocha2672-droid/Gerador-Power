@@ -1,95 +1,33 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>O Código da Agulha — Curso de Bordado com OpenAI</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-  <script>
-    tailwind.config={theme:{extend:{colors:{craft:{50:'#FAF8F5',100:'#F3EFE9',200:'#E6DDD0',400:'#BAA385',700:'#695135',800:'#4D3B27',900:'#2A2015',950:'#17110B'},terracotta:{500:'#C85A42',600:'#B24630'},ai:{500:'#10A37F',600:'#0E8F70'}},fontFamily:{serif:['Cinzel','serif'],sans:['Plus Jakarta Sans','sans-serif']}}}}
-  </script>
-  <style>
-    body{font-family:'Plus Jakarta Sans',sans-serif;scroll-behavior:smooth}.active-read{background:rgba(200,90,66,.09);border-left:5px solid #C85A42;padding-left:1rem}.module-hidden{display:none}.out h3{font-family:Cinzel,serif;font-weight:900;margin-top:1rem}.out ul{list-style:disc;margin-left:1.2rem}.out li{margin:.25rem 0}
-  </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>O Código da Agulha — Curso de Bordado</title>
+  <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-craft-50 text-craft-900">
-  <div class="sticky top-0 z-50 bg-craft-100/95 backdrop-blur border-b border-craft-200 shadow px-4 py-3">
-    <div class="max-w-7xl mx-auto flex flex-col lg:flex-row gap-3 items-center justify-between">
-      <div>
-        <b class="font-serif tracking-widest">ATELIÊ DE LEITURA</b>
-        <p class="text-xs text-craft-700">Narração OpenAI TTS — português do Brasil, sem fallback robótico</p>
-      </div>
-      <div class="flex flex-wrap gap-2 items-center justify-center">
-        <select id="voice" class="text-xs rounded border px-2 py-2" title="Voz OpenAI">
-          <option value="coral" selected>Coral — natural e acolhedora</option>
-          <option value="nova">Nova — clara e dinâmica</option>
-          <option value="shimmer">Shimmer — suave</option>
-          <option value="alloy">Alloy — neutra</option>
-          <option value="echo">Echo — firme</option>
-          <option value="onyx">Onyx — grave</option>
-        </select>
-        <input id="rate" type="range" min="0.85" max="1.15" step="0.05" value="0.95" class="accent-terracotta-500">
-        <span id="ratev" class="text-xs">0.95x</span>
-        <button onclick="prev()" class="px-3 py-2 bg-white rounded border">◀</button>
-        <button id="play" onclick="toggle()" class="px-4 py-2 bg-terracotta-500 text-white rounded font-bold">Ouvir</button>
-        <button onclick="stop()" class="px-3 py-2 bg-white rounded border">■</button>
-        <button onclick="next()" class="px-3 py-2 bg-white rounded border">▶</button>
-        <button onclick="testVoice()" class="px-3 py-2 bg-ai-500 text-white rounded font-bold text-xs">Testar voz</button>
-      </div>
-      <div class="w-full lg:w-56 flex gap-2 items-center text-xs"><span>Progresso</span><div class="flex-1 h-2 bg-craft-200 rounded"><div id="bar" class="h-2 bg-terracotta-500 rounded w-0"></div></div><span id="pct">0%</span></div>
-    </div>
-    <div id="ttsStatus" class="max-w-7xl mx-auto mt-2 text-xs text-craft-700">Voz ativa: OpenAI TTS. Se houver erro, ele aparecerá aqui em vez de tocar a voz robótica do navegador.</div>
-  </div>
-
-  <header class="bg-craft-950 text-white py-20 border-b-8 border-terracotta-500">
-    <div class="max-w-6xl mx-auto px-6 text-center space-y-5">
-      <span class="inline-block px-4 py-1 bg-ai-500 rounded-full text-xs font-bold tracking-widest uppercase">OpenAI Neural Voice + Atelier Toolkit</span>
-      <h1 class="font-serif text-4xl md:text-7xl font-black">O CÓDIGO DA AGULHA</h1>
-      <p class="max-w-3xl mx-auto text-craft-200">Portal de bordado com módulos expandidos, leitor neural em português do Brasil, simulador de pontos e ferramentas OpenAI para criar projetos, diagnosticar erros e gerar planos de estudo.</p>
-      <div class="flex gap-3 justify-center flex-wrap"><a href="#modulo1" class="bg-white text-craft-950 px-5 py-3 rounded font-bold text-sm">Começar</a><a href="#openai" class="bg-ai-500 px-5 py-3 rounded font-bold text-sm">OpenAI Lab</a><a href="#simulador" class="bg-terracotta-500 px-5 py-3 rounded font-bold text-sm">Simulador</a></div>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <span class="badge">Curso pronto</span>
+      <h1>O Código da Agulha</h1>
+      <p>Curso de bordado com módulos já consolidados. O site não expande aulas com IA; ele apresenta o conteúdo pronto para estudo, prática e impressão.</p>
+      <button onclick="window.print()">Imprimir / salvar PDF</button>
     </div>
   </header>
 
-  <div class="max-w-7xl mx-auto px-4 py-10 grid lg:grid-cols-4 gap-8">
-    <aside class="lg:col-span-1">
-      <div class="sticky top-32 bg-white rounded-2xl border p-5 shadow space-y-4">
-        <input id="search" oninput="filterModules()" placeholder="Pesquisar módulo..." class="w-full border rounded px-3 py-2 text-sm">
-        <div class="grid grid-cols-2 gap-2 text-center"><div class="bg-craft-50 rounded p-3"><b id="nmods" class="text-2xl">36</b><p class="text-xs">módulos</p></div><div class="bg-craft-50 rounded p-3"><b class="text-2xl">TTS</b><p class="text-xs">OpenAI</p></div></div>
-        <nav id="nav" class="max-h-[520px] overflow-auto space-y-1"></nav>
-        <div class="bg-ai-500/10 border border-ai-500/20 p-3 rounded-xl text-xs text-craft-800"><b>Importante</b><p>Não há mais fallback para a voz do navegador. Se a API falhar, o sistema mostra o erro e não toca voz robótica.</p></div>
-      </div>
+  <main class="layout">
+    <aside class="panel">
+      <input id="search" placeholder="Pesquisar módulo">
+      <nav id="nav" class="nav"></nav>
     </aside>
-    <main class="lg:col-span-3 space-y-10">
-      <section class="bg-amber-50 border border-amber-200 rounded-2xl p-6"><h2 class="font-serif font-black text-2xl">O que é bordado?</h2><p id="intro" class="read mt-3 leading-relaxed cursor-pointer">Bordado é a arte de construir desenho, textura e significado sobre tecido usando agulha, linha e ritmo. Neste curso, o aluno começa pela escolha do suporte, aprende tensão, pontos fundamentais, técnicas de preenchimento, tradições culturais, acabamento, conservação e criação de projetos autorais com apoio de ferramentas OpenAI.</p></section>
 
-      <section id="simulador" class="bg-craft-950 text-white rounded-3xl p-6 space-y-4"><h2 class="font-serif font-black text-2xl">Simulador de Pontos</h2><p class="text-craft-200 text-sm">Escolha um ponto para visualizar a lógica da linha no tecido.</p><div class="flex gap-2 flex-wrap"><button onclick="anim('alinhavo')" class="bg-white/10 hover:bg-terracotta-500 px-4 py-2 rounded">Alinhavo</button><button onclick="anim('atras')" class="bg-white/10 hover:bg-terracotta-500 px-4 py-2 rounded">Ponto atrás</button><button onclick="anim('haste')" class="bg-white/10 hover:bg-terracotta-500 px-4 py-2 rounded">Haste</button><button onclick="anim('cheio')" class="bg-white/10 hover:bg-terracotta-500 px-4 py-2 rounded">Cheio</button></div><canvas id="canvas" width="720" height="210" class="w-full bg-craft-900 rounded-xl border border-craft-700"></canvas><p id="status" class="text-xs text-craft-300">Selecione uma técnica.</p></section>
+    <section>
+      <div id="modules"></div>
+    </section>
+  </main>
 
-      <section id="openai" class="bg-gradient-to-br from-slate-950 to-emerald-950 text-white rounded-3xl p-6 space-y-5"><div><span class="text-ai-500 text-xs font-bold uppercase tracking-widest">Ferramentas OpenAI</span><h2 class="font-serif font-black text-3xl">Atelier Inteligente</h2><p class="text-slate-300 text-sm">Use o backend seguro em <code>/api/atelier</code> para criar projetos, planos, quizzes e diagnósticos.</p></div><div class="grid md:grid-cols-3 gap-3"><select id="aimode" class="bg-slate-900 border border-slate-700 rounded p-3 text-sm"><option value="projeto">Gerar projeto</option><option value="diagnostico">Diagnosticar erro</option><option value="plano">Plano de estudo</option><option value="quiz">Quiz</option><option value="expandir_modulo">Expandir módulo</option><option value="roteiro">Roteiro de aula</option><option value="prompt_visual">Prompts visuais</option></select><select id="ailevel" class="bg-slate-900 border border-slate-700 rounded p-3 text-sm"><option>Iniciante absoluto</option><option>Intermediário</option><option>Avançado</option><option>Professor/infoprodutor</option></select><select id="aimodule" class="bg-slate-900 border border-slate-700 rounded p-3 text-sm"></select></div><textarea id="aiprompt" rows="5" class="w-full bg-slate-900 border border-slate-700 rounded p-4" placeholder="Ex: Quero bordar um jardim de lavandas em bastidor de 15 cm para iniciante..."></textarea><div class="flex gap-2 flex-wrap"><button onclick="askAI()" id="aibtn" class="bg-ai-500 hover:bg-ai-600 px-5 py-3 rounded font-bold">Gerar com OpenAI</button><button onclick="example('projeto')" class="bg-white/10 px-4 py-3 rounded">Exemplo projeto</button><button onclick="example('diagnostico')" class="bg-white/10 px-4 py-3 rounded">Exemplo erro</button></div><div id="loader" class="hidden text-ai-500 font-bold">Consultando OpenAI...</div><div id="aiout" class="hidden out bg-slate-950 border border-slate-700 rounded-2xl p-5 text-sm leading-relaxed"></div></section>
-
-      <div id="modules" class="space-y-6"></div>
-    </main>
-  </div>
-  <audio id="ttsAudio" class="hidden"></audio>
-  <footer class="bg-craft-950 text-craft-200 py-10 mt-12"><div class="max-w-7xl mx-auto px-6"><b class="font-serif text-xl">O Código da Agulha</b><p class="text-sm mt-2">Curso de bordado com ferramentas OpenAI, simulação e narração OpenAI TTS em português do Brasil.</p></div></footer>
-
-<script>
-const modules=[['Introdução ao Bordado e Cronologia Têxtil','origens, função utilitária, adorno, identidade cultural e prática contemporânea','Costure linhas retas em retalho e observe tensão, regularidade e conforto.'],['Anatomia das Fibras e Tecidos','linho, algodão, cambraia, sarja, Aida, trama aberta e fechada','Compare dois tecidos e registre qual aceita melhor a agulha.'],['Ferramentas Essenciais','agulhas, tesoura, bastidor, dedal, fita métrica, marcadores e organização','Monte um estojo mínimo e teste cada agulha em retalho.'],['Linhas e Fios','mouliné, perlé, seda, lã, metálicos, espessura, brilho e torção','Borde o mesmo traço com 1, 2, 3 e 6 cabos.'],['Ergonomia e Iluminação','postura, pausas, luz neutra, apoio dos braços e prevenção de fadiga','Pratique 15 minutos com pausa e ajuste do bastidor.'],['Transferência de Riscos','papel carbono têxtil, caixa de luz, caneta apagável e estabilidade do desenho','Transfira um desenho simples sem distorcer o tecido.'],['Preparação do Bastidor','centralização, tensão radial e som de tambor','Recoloque o tecido até a trama ficar alinhada.'],['Começar e Terminar sem Nós','laçada, ponta presa, arremate invisível e avesso limpo','Faça 5 linhas com início e fim sem nó aparente.'],['Ponto Alinhavo','ritmo, espaços regulares, base para Sashiko e Kantha','Crie uma grade de alinhavos paralelos.'],['Ponto Atrás','contorno estável, letras, curvas e desenho linear','Contorne uma folha usando ponto atrás.'],['Ponto Haste','linha torcida, hastes florais, curvas orgânicas','Borde três curvas mantendo a linha do mesmo lado.'],['Ponto Divisório','textura firme, contorno medieval e linha espessa','Divida o ponto anterior no centro com precisão.'],['Ponto Corrente','elos, contornos largos e preenchimento flexível','Faça uma corrente reta e outra curva.'],['Espinha de Peixe','folhas, pétalas, eixo central e simetria','Preencha uma folha estreita.'],['Ponto Cheio','preenchimento liso, tensão equilibrada e brilho','Preencha um círculo pequeno sem espaços.'],['Ponto Matiz','degradê, pintura de agulha, pontos longos e curtos','Crie um degradê com três tons próximos.'],['Ponto de Areia','sombra, textura granular e preenchimento solto','Construa uma área de sombra com pontos curtos.'],['Nó Francês','relevo, miolo de flor, olhos e textura pontual','Faça 20 nós com tamanho constante.'],['Ponto Rococó','espiral, rosas, volume e controle de enrolamento','Teste rococós de 6, 10 e 14 voltas.'],['Margarida e Mosca','laçadas fixadas, pétalas rápidas e ornamentos','Crie uma flor com 6 pétalas.'],['Sashiko','Japão, alinhavo regular, índigo e geometrias','Borde um padrão simples em linhas brancas.'],['Kantha','Bengala, reaproveitamento têxtil, camadas e narrativas','Una duas camadas com fileiras corridas.'],['Castelo Branco','linho, seda, árvore da vida e símbolos portugueses','Desenhe um motivo floral inspirado.'],['Otomí / Tenango','México, animais, cores fortes e narrativa visual','Crie um esboço com fauna estilizada.'],['Hardanger','Noruega, trama contável, blocos Kloster e áreas abertas','Planeje uma pequena borda geométrica.'],['Crewel Jacobino','lã, linho pesado, ramagens e árvore da vida','Faça um ramo sinuoso com ponto haste.'],['Bordado de Ouro','couching, fios metálicos e superfície cerimonial','Fixe um fio espesso com pontos transversais.'],['Miçangas e Pedrarias','brilho, tule, lantejoulas e alta-costura','Aplique 10 miçangas em linha reta.'],['Acabamento e Bloqueio','lavagem, secagem, bloqueio e ferro pelo avesso','Faça bloqueio de um retalho úmido.'],['Conservação e Restauro','luz, poeira, armazenamento e intervenção mínima','Crie um plano de guarda para uma peça.'],['Composição Visual','peso, foco, repetição, respiro e moldura','Organize três motivos em bastidor circular.'],['Paleta de Cores','harmonia, contraste, tons análogos e acento','Monte uma paleta de 5 cores para flores.'],['Projeto Comercial','precificação, tempo, materiais, margem e ficha técnica','Calcule custo de uma peça simples.'],['Fotografia e Portfólio','luz natural, fundo, close, processo e catálogo','Fotografe uma amostra em 3 ângulos.'],['Aula e Produto Digital','roteiro, módulos, bônus, comunidade e suporte','Transforme uma técnica em mini aula.'],['Projeto Final','planejamento, execução, acabamento, foto e reflexão','Crie um bastidor autoral combinando 5 pontos.']].map((m,i)=>({id:i+1,title:m[0],summary:m[1],practice:m[2]}));
-let paras=[],idx=0,currentUrl=null,isLoadingVoice=false;
-const audio=document.getElementById('ttsAudio');
-const statusBox=document.getElementById('ttsStatus');
-function esc(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
-function setStatus(msg,kind='info'){statusBox.textContent=msg;statusBox.className='max-w-7xl mx-auto mt-2 text-xs '+(kind==='err'?'text-red-700 font-bold':'text-craft-700')}
-function render(){document.getElementById('nmods').textContent=modules.length;document.getElementById('nav').innerHTML=modules.map(m=>`<a href="#modulo${m.id}" class="nav block text-xs p-2 rounded hover:bg-craft-100"><b>${String(m.id).padStart(2,'0')}</b> ${esc(m.title)}</a>`).join('');document.getElementById('aimodule').innerHTML=modules.map(m=>`<option value="${m.id}">${String(m.id).padStart(2,'0')} — ${esc(m.title)}</option>`).join('');document.getElementById('modules').innerHTML=modules.map(m=>`<section id="modulo${m.id}" class="mod bg-white border rounded-2xl p-6 shadow-sm space-y-4"><div class="border-b pb-3 flex gap-3 items-center"><span class="bg-craft-200 px-3 py-1 rounded font-serif font-bold">Módulo ${String(m.id).padStart(2,'0')}</span><h2 class="font-serif font-bold text-xl">${esc(m.title)}</h2></div><p class="read leading-relaxed cursor-pointer">Este módulo aprofunda ${esc(m.summary)}. O foco é transformar conhecimento em prática segura: observar o tecido, controlar a tensão, testar em retalho e registrar o resultado. Objetivos: compreender a técnica, aplicar em pequena amostra, reconhecer erros comuns e decidir quando usá-la em um projeto real.</p><div class="grid md:grid-cols-2 gap-3 text-sm"><div class="bg-craft-50 rounded-xl p-4"><b>Prática guiada</b><p>${esc(m.practice)}</p></div><div class="bg-terracotta-500/10 rounded-xl p-4"><b>Checklist</b><ul class="list-disc ml-5"><li>tensão uniforme</li><li>avesso organizado</li><li>pontos legíveis</li><li>foto da amostra</li></ul></div></div><button onclick="prep(${m.id})" class="text-xs bg-ai-500 text-white px-3 py-2 rounded font-bold">Expandir com OpenAI</button></section>`).join('');paras=[...document.querySelectorAll('.read')];paras.forEach((p,i)=>p.onclick=()=>{idx=i;speak()});}
-function filterModules(){let q=document.getElementById('search').value.toLowerCase();document.querySelectorAll('.mod').forEach(s=>s.classList.toggle('module-hidden',!(s.textContent.toLowerCase().includes(q))));document.querySelectorAll('.nav').forEach((a,i)=>a.style.display=modules[i].title.toLowerCase().includes(q)||modules[i].summary.toLowerCase().includes(q)?'block':'none')}
-document.getElementById('rate').oninput=e=>document.getElementById('ratev').textContent=Number(e.target.value).toFixed(2)+'x';
-function mark(){paras.forEach(p=>p.classList.remove('active-read'));let p=paras[idx];if(p){p.classList.add('active-read');p.scrollIntoView({behavior:'smooth',block:'center'})}progress()}
-async function speak(customText=null){if(isLoadingVoice)return;let text=customText||paras[idx]?.textContent;if(!text)return;stop(false);if(!customText)mark();isLoadingVoice=true;document.getElementById('play').textContent='Gerando voz...';setStatus('Gerando áudio com OpenAI TTS. Nenhuma voz local do navegador será usada.');try{let r=await fetch('/api/tts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,voice:document.getElementById('voice').value||'coral',speed:+document.getElementById('rate').value})});if(!r.ok){let d={};try{d=await r.json()}catch(e){}throw new Error(d.error||'Falha no endpoint /api/tts')}let blob=await r.blob();if(!blob.type.includes('audio'))throw new Error('O servidor não retornou áudio.');if(currentUrl)URL.revokeObjectURL(currentUrl);currentUrl=URL.createObjectURL(blob);audio.src=currentUrl;audio.onended=()=>{if(!customText)idx=Math.min(idx+1,paras.length-1);progress();document.getElementById('play').textContent='Ouvir';setStatus('Narração finalizada. Voz usada: OpenAI TTS.')} ;audio.onerror=()=>{document.getElementById('play').textContent='Ouvir';setStatus('Erro ao reproduzir o MP3 gerado pela OpenAI.', 'err')};await audio.play();document.getElementById('play').textContent='Pausar';setStatus('Reproduzindo MP3 gerado pela OpenAI TTS.')}catch(e){document.getElementById('play').textContent='Ouvir';setStatus('Erro na narração OpenAI: '+e.message+'. A voz robótica local foi desativada.', 'err');console.error(e)}finally{isLoadingVoice=false}}
-function testVoice(){speak('Teste de voz OpenAI em português do Brasil. Esta narração deve soar mais natural e não deve usar a voz robótica do navegador.')}function stop(update=true){audio.pause();audio.currentTime=0;if(update)document.getElementById('play').textContent='Ouvir'}function toggle(){if(!audio.paused){stop();return}speak()}function next(){stop();idx=Math.min(idx+1,paras.length-1);speak()}function prev(){stop();idx=Math.max(idx-1,0);speak()}function progress(){let p=Math.round(idx/Math.max(paras.length-1,1)*100);document.getElementById('bar').style.width=p+'%';document.getElementById('pct').textContent=p+'%'}
-function prep(id){document.getElementById('aimodule').value=id;document.getElementById('aimode').value='expandir_modulo';document.getElementById('aiprompt').value='Expanda este módulo como uma apostila prática.';location.hash='openai'}function example(k){document.getElementById('aimode').value=k;document.getElementById('aiprompt').value=k==='diagnostico'?'Meu tecido está enrugando no ponto cheio e a linha quebra com frequência.':'Quero bordar um jardim com lavanda, margaridas e borboleta em bastidor de 15 cm para iniciante.'}
-async function askAI(){let id=+document.getElementById('aimodule').value,m=modules.find(x=>x.id===id),out=document.getElementById('aiout'),loader=document.getElementById('loader'),btn=document.getElementById('aibtn');loader.classList.remove('hidden');out.classList.add('hidden');btn.disabled=true;try{let r=await fetch('/api/atelier',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:document.getElementById('aimode').value,level:document.getElementById('ailevel').value,prompt:document.getElementById('aiprompt').value,module:m})});let d=await r.json();if(!r.ok)throw new Error(d.error||'erro');out.innerHTML=md(d.text)}catch(e){out.innerHTML='<h3>Erro no OpenAI Lab</h3><p>'+esc(e.message)+'</p><p>Configure OPENAI_API_KEY no ambiente do servidor.</p>'}finally{loader.classList.add('hidden');out.classList.remove('hidden');btn.disabled=false}}
-function md(t){return esc(t||'').replace(/^### (.*)$/gm,'<h3>$1</h3>').replace(/^## (.*)$/gm,'<h3>$1</h3>').replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/^- (.*)$/gm,'<li>$1</li>').replace(/(<li>.*<\/li>)/gs,'<ul>$1</ul>').replace(/\n/g,'<br>')}
-const c=document.getElementById('canvas'),ctx=c.getContext('2d');function fabric(){ctx.clearRect(0,0,c.width,c.height);ctx.fillStyle='#2A2015';ctx.fillRect(0,0,c.width,c.height);ctx.strokeStyle='rgba(255,255,255,.08)';for(let x=20;x<c.width;x+=20){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,c.height);ctx.stroke()}for(let y=20;y<c.height;y+=20){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(c.width,y);ctx.stroke()}}function seg(a,b,d,e,p){ctx.strokeStyle='#C85A42';ctx.lineWidth=6;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(a,b);ctx.lineTo(a+(d-a)*p,b+(e-b)*p);ctx.stroke()}function anim(type){let t=0,sets={alinhavo:[[60,130,130,130],[190,130,260,130],[320,130,390,130],[450,130,520,130]],atras:[[80,130,160,130],[160,130,120,130],[160,130,240,130],[240,130,200,130],[240,130,320,130]],haste:[[70,150,140,105],[140,105,210,150],[210,150,280,105],[280,105,350,150]],cheio:[[180,70,180,160],[205,65,205,165],[230,65,230,165],[255,70,255,160],[280,80,280,150]]};document.getElementById('status').textContent='Simulando '+type;function step(){fabric();t+=.025;(sets[type]||sets.alinhavo).forEach((s,i)=>{let p=Math.min(Math.max(t*3-i*.45,0),1);if(p>0)seg(...s,p)});if(t<2.5)requestAnimationFrame(step)}step()}fabric();render();
-</script>
+  <script src="data/course.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
