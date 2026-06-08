@@ -1,0 +1,111 @@
+body {
+  margin: 0;
+  background: #fbf7ef;
+  color: #25180f;
+  font-family: Arial, sans-serif;
+  line-height: 1.6;
+}
+
+.hero {
+  background: #1d140d;
+  color: white;
+  padding: 44px 18px;
+}
+
+.wrap {
+  max-width: 1050px;
+  margin: auto;
+}
+
+.hero h1 {
+  font-family: Georgia, serif;
+  font-size: 46px;
+  margin: 10px 0;
+}
+
+.badge {
+  display: inline-block;
+  background: #b3543c;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+button {
+  border: 0;
+  border-radius: 10px;
+  background: #b3543c;
+  color: white;
+  padding: 12px 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 270px 1fr;
+  gap: 22px;
+  max-width: 1180px;
+  margin: auto;
+  padding: 24px 18px;
+}
+
+.panel,
+.module {
+  background: #fffaf2;
+  border: 1px solid #eadcca;
+  border-radius: 18px;
+  padding: 18px;
+  margin-bottom: 18px;
+}
+
+input {
+  width: 100%;
+  padding: 11px;
+  border: 1px solid #d8c5ad;
+  border-radius: 10px;
+  margin-bottom: 14px;
+}
+
+.nav a {
+  display: block;
+  color: #25180f;
+  text-decoration: none;
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.nav a:hover {
+  background: #f0e3d0;
+}
+
+.module h2 {
+  font-family: Georgia, serif;
+  margin-top: 0;
+}
+
+.meta {
+  color: #725d48;
+  font-weight: bold;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.box {
+  background: #fff;
+  border: 1px solid #eee0cf;
+  border-radius: 14px;
+  padding: 14px;
+}
+
+@media (max-width: 850px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
