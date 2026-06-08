@@ -1,33 +1,179 @@
+
+
+
 <!doctype html>
+
+
+
 <html lang="pt-BR">
+
+
+
 <head>
+
+
+
   <meta charset="utf-8">
+
+
+
   <meta name="viewport" content="width=device-width,initial-scale=1">
+
+
+
   <title>O Código da Agulha — Curso de Bordado</title>
+
+
+
   <link rel="stylesheet" href="style.css">
+
+
+
 </head>
+
+
+
 <body>
+
+
+
   <header class="hero">
+
+
+
     <div class="wrap">
+
+
+
       <span class="badge">Curso pronto</span>
+
+
+
       <h1>O Código da Agulha</h1>
-      <p>Curso de bordado com módulos já consolidados. O site não expande aulas com IA; ele apresenta o conteúdo pronto para estudo, prática e impressão.</p>
-      <button onclick="window.print()">Imprimir / salvar PDF</button>
+
+
+
+      <p>
+
+
+
+        Curso de bordado com módulos consolidados. Este site não expande aulas com IA:
+
+
+
+        ele apresenta o conteúdo já pronto para estudo, prática e impressão.
+
+
+
+      </p>
+
+
+
+      <div class="actions">
+
+
+
+        <button onclick="window.print()">Imprimir / salvar PDF</button>
+
+
+
+        <a href="#modulos">Ver módulos</a>
+
+
+
+      </div>
+
+
+
     </div>
+
+
+
   </header>
 
+
+
+
+
+
+
   <main class="layout">
-    <aside class="panel">
-      <input id="search" placeholder="Pesquisar módulo">
-      <nav id="nav" class="nav"></nav>
+
+
+
+    <aside class="sidebar">
+
+
+
+      <input id="search" placeholder="Pesquisar módulo, aula ou técnica">
+
+
+
+      <div id="count" class="count">Carregando...</div>
+
+
+
+      <nav id="nav"></nav>
+
+
+
     </aside>
 
-    <section>
+
+
+
+
+
+
+    <section id="modulos" class="content">
+
+
+
       <div id="modules"></div>
+
+
+
     </section>
+
+
+
   </main>
 
+
+
+
+
+
+
+  <footer>
+
+
+
+    <p>O Código da Agulha — curso pronto de bordado.</p>
+
+
+
+  </footer>
+
+
+
+
+
+
+
   <script src="data/course.js"></script>
+
+
+
   <script src="app.js"></script>
+
+
+
 </body>
+
+
+
 </html>
+
+
+
