@@ -137,9 +137,18 @@ function markerPositions(raw) {
   }));
 }
 
+function courseBodyStart(raw) {
+  const markers = markerPositions(raw);
+  if (markers.length) return markers[0].index;
+  const markerText = raw.search(/CURSO\s+DE\s+B\s*O\s*R\s*D\s*A\s*D\s*O\s*[-–—]\s*M\s*[ÓO]\s*D\s*U\s*L\s*O\s*1/i);
+  if (markerText >= 0) return markerText;
+  const afterIndex = raw.search(/M[óo]dulo\s+I\s*:/i);
+  if (afterIndex >= 0) return afterIndex;
+  return 0;
+}
+
 function sectionHeadingPositions(raw) {
-  const firstMarker = markerPositions(raw)[0]?.index ?? raw.search(/CURSO\s+DE\s+BORDADO/i);
-  const startAt = firstMarker >= 0 ? firstMarker : 0;
+  const startAt = courseBodyStart(raw);
   const body = raw.slice(startAt);
   const heading = /(?:^|\n)\s*M[óo]dulo\s+(?:[IVXLCDM]+|\d+)\s*:/gi;
   return [...body.matchAll(heading)].map((match, index) => ({
@@ -150,33 +159,43 @@ function sectionHeadingPositions(raw) {
 }
 
 function titlePositions(raw) {
-  const normalizedRaw = normalizeText(raw);
+  const startAt = courseBodyStart(raw);
+  const body = raw.slice(startAt);
+  const normalizedBody = normalizeText(body);
   const positions = [];
+
   for (const [index, title] of TITLES.entries()) {
     const normalizedTitle = normalizeText(title);
-    const normalizedPosition = normalizedRaw.indexOf(normalizedTitle);
+    const normalizedPosition = normalizedBody.indexOf(normalizedTitle);
     if (normalizedPosition < 0) continue;
-    const directPosition = raw.indexOf(title);
+
+    const directPosition = body.indexOf(title);
     positions.push({
       id: index + 1,
       title,
-      index: directPosition >= 0 ? directPosition : Math.max(0, normalizedPosition - 120),
+      index: startAt + (directPosition >= 0 ? directPosition : Math.max(0, normalizedPosition - 120)),
       source: 'official-title',
     });
   }
+
   return positions.sort((a, b) => a.index - b.index).filter((item, index, list) => index === 0 || item.id !== list[index - 1].id);
+}
+
+function validModules(modules) {
+  return modules.length >= 30 && modules.slice(0, 30).every(module => module.charCount > 500);
 }
 
 function splitModules(text) {
   const raw = String(text || '');
   const strategies = [markerPositions(raw), sectionHeadingPositions(raw), titlePositions(raw)];
-  const winner = strategies.find(positions => positions.length >= 30);
 
-  if (!winner) {
-    throw new Error(`Marcadores: ${strategies[0].length}; cabeçalhos: ${strategies[1].length}; títulos oficiais: ${strategies[2].length}/30.`);
+  for (const positions of strategies) {
+    if (positions.length < 30) continue;
+    const modules = modulesFromPositions(raw, positions);
+    if (validModules(modules)) return modules;
   }
 
-  return modulesFromPositions(raw, winner);
+  throw new Error(`Marcadores: ${strategies[0].length}; cabeçalhos: ${strategies[1].length}; títulos oficiais pós-índice: ${strategies[2].length}/30.`);
 }
 
 function loadCourse() {
