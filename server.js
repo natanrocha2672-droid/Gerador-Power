@@ -7,6 +7,39 @@ const PORT = process.env.PORT || 3000;
 const COURSE_FILE = path.join(ROOT, 'data', 'curso-extraido.json');
 let courseCache = null;
 
+const TITLES = [
+  'Arqueologia Têxtil e as Origens do Bordado',
+  'Opus Anglicanum e Sacralidade Medieval',
+  'Renascimento, Modelbooks e Blackwork',
+  'Era Industrial e Máquinas de Bordar',
+  'Fibras Naturais e Sintéticas',
+  'Ergonomia e Bastidor Profissional',
+  'Morfologia dos Pontos',
+  'Needle Painting e Degradê',
+  'Bordado Branco e Hardanger',
+  'Crewel e Estilo Jacobino',
+  'Goldwork I: Couching e Or Nué',
+  'Goldwork II: Relevo e Purl',
+  'Shisha e Espelhamento',
+  'Sashiko e Kogin',
+  'Zardosi Imperial',
+  'Lunéville e Tambour',
+  'Pedrarias e Paetês',
+  'Stumpwork e Bordado em Relevo',
+  'Bordado Brasileiro',
+  'Rendas de Agulha e Ponto de Veneza',
+  'Conservação e Restauro Têxtil',
+  'Design de Padrões',
+  'Digitalização e Bordado Computadorizado',
+  'Gestão de Ateliê',
+  'Curadoria e Exposição',
+  'Bordado na Arte Contemporânea',
+  'Materiais Não Convencionais',
+  'Alfaiataria e Bordado',
+  'Fotografia e Documentação Técnica',
+  'Projeto Final: Coleção Autoral',
+];
+
 function send(res, status, body, type = 'text/plain; charset=utf-8') {
   res.writeHead(status, { 'Content-Type': type, 'Cache-Control': 'no-store' });
   res.end(body);
@@ -18,16 +51,6 @@ function sendJson(res, status, data) {
 
 function clean(value, max = 500) {
   return String(value || '').replace(/\s+/g, ' ').trim().slice(0, max);
-}
-
-function escapeHtml(value) {
-  return String(value || '').replace(/[&<>"']/g, char => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;',
-  }[char]));
 }
 
 function staticType(filePath) {
@@ -88,6 +111,58 @@ function summaryFromContent(content) {
   return clean(lines.slice(0, 4).join(' '), 420);
 }
 
+function normalizeText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function findTitlePositions(raw) {
+  const normalizedRaw = normalizeText(raw);
+  const positions = [];
+
+  for (const [index, title] of TITLES.entries()) {
+    const normalizedTitle = normalizeText(title);
+    const normalizedPosition = normalizedRaw.indexOf(normalizedTitle);
+
+    if (normalizedPosition < 0) continue;
+
+    const excerpt = raw.slice(Math.max(0, normalizedPosition - 300), normalizedPosition + title.length + 300);
+    const directPosition = raw.indexOf(title);
+    positions.push({
+      id: index + 1,
+      title,
+      index: directPosition >= 0 ? directPosition : Math.max(0, normalizedPosition - 120),
+      excerpt,
+    });
+  }
+
+  return positions
+    .filter(item => Number.isFinite(item.index))
+    .sort((a, b) => a.index - b.index)
+    .filter((item, index, list) => index === 0 || item.id !== list[index - 1].id);
+}
+
+function modulesFromPositions(raw, positions) {
+  return positions.slice(0, 30).map((item, index) => {
+    const start = item.index;
+    const end = index + 1 < positions.length ? positions[index + 1].index : raw.length;
+    const content = raw.slice(start, end).trim();
+    return {
+      id: item.id || index + 1,
+      title: item.title || titleFromContent(content, `Módulo ${index + 1}`),
+      summary: summaryFromContent(content),
+      content,
+      charCount: content.length,
+      source: 'data/curso-extraido.json',
+    };
+  });
+}
+
 function splitModules(text) {
   const raw = String(text || '');
   const marker = /CURSO\s+DE\s+B\s*O\s*R\s*D\s*A\s*D\s*O\s*[-–—]\s*M\s*[ÓO]\s*D\s*U\s*L\s*O\s+(\d+)/gi;
@@ -96,25 +171,29 @@ function splitModules(text) {
     index: match.index,
   }));
 
-  if (matches.length < 30) {
-    throw new Error(`Foram encontrados apenas ${matches.length} módulos no JSON real.`);
+  if (matches.length >= 30) {
+    return matches.slice(0, 30).map((match, index) => {
+      const start = match.index;
+      const end = index + 1 < matches.length ? matches[index + 1].index : raw.length;
+      const content = raw.slice(start, end).trim();
+      const id = match.id || index + 1;
+      return {
+        id,
+        title: titleFromContent(content, TITLES[id - 1] || `Módulo ${id}`),
+        summary: summaryFromContent(content),
+        content,
+        charCount: content.length,
+        source: 'data/curso-extraido.json',
+      };
+    });
   }
 
-  return matches.slice(0, 30).map((match, index) => {
-    const start = match.index;
-    const end = index + 1 < matches.length ? matches[index + 1].index : raw.length;
-    const content = raw.slice(start, end).trim();
-    const id = match.id || index + 1;
-    const title = titleFromContent(content, `Módulo ${id}`);
-    return {
-      id,
-      title,
-      summary: summaryFromContent(content),
-      content,
-      charCount: content.length,
-      source: 'data/curso-extraido.json',
-    };
-  });
+  const titlePositions = findTitlePositions(raw);
+  if (titlePositions.length < 30) {
+    throw new Error(`Marcadores: ${matches.length}; títulos oficiais encontrados: ${titlePositions.length}/30.`);
+  }
+
+  return modulesFromPositions(raw, titlePositions);
 }
 
 function loadCourse() {
