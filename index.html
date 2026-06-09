@@ -11,46 +11,25 @@
   </style>
 </head>
 <body>
-  <header class="hero">
-    <div class="wrap">
-      <span class="badge">Curso completo</span>
-      <h1>O Código da Agulha</h1>
-      <p id="heroDesc">Carregando os 30 módulos completos do curso de bordado.</p>
-      <div class="actions">
-        <button type="button" onclick="window.print()">Imprimir / salvar PDF</button>
-        <a href="#modulos">Ver módulos</a>
-      </div>
-    </div>
-  </header>
-
-  <main class="layout">
-    <aside class="sidebar">
-      <input id="search" placeholder="Pesquisar módulo, técnica ou termo" aria-label="Pesquisar módulo">
-      <div id="count" class="count">Carregando...</div>
-      <nav id="nav" class="nav" aria-label="Lista de módulos"></nav>
-    </aside>
-
-    <section id="modulos" class="content">
-      <div id="status" class="status">Carregando módulos completos...</div>
-      <div id="modules"></div>
-    </section>
-  </main>
-
+  <header class="hero"><div class="wrap"><span class="badge">Curso completo</span><h1>O Código da Agulha</h1><p id="heroDesc">Carregando os 30 módulos completos do curso de bordado.</p><div class="actions"><button type="button" onclick="window.print()">Imprimir / salvar PDF</button><a href="#modulos">Ver módulos</a></div></div></header>
+  <main class="layout"><aside class="sidebar"><input id="search" placeholder="Pesquisar módulo, técnica ou termo" aria-label="Pesquisar módulo"><div id="count" class="count">Carregando...</div><nav id="nav" class="nav" aria-label="Lista de módulos"></nav></aside><section id="modulos" class="content"><div id="status" class="status">Carregando módulos completos...</div><div id="modules"></div></section></main>
   <footer><p>O Código da Agulha — curso completo de bordado.</p></footer>
-
   <script>
-    const root=document.getElementById('modules'),count=document.getElementById('count'),search=document.getElementById('search'),nav=document.getElementById('nav'),statusBox=document.getElementById('status'),heroDesc=document.getElementById('heroDesc');
-    let modules=[];
+    const root=document.getElementById('modules'),count=document.getElementById('count'),search=document.getElementById('search'),nav=document.getElementById('nav'),statusBox=document.getElementById('status'),heroDesc=document.getElementById('heroDesc');let modules=[];
     function escapeHtml(value){return String(value||'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))}
     function clean(value,max=500){return String(value||'').replace(/\s+/g,' ').trim().slice(0,max)}
     function imagePromptBlock(content){const idx=String(content||'').search(/Sugestões de Imagens/i);return idx>=0?String(content).slice(idx).trim():''}
     function mainContent(content){const idx=String(content||'').search(/Sugestões de Imagens/i);return idx>=0?String(content).slice(0,idx).trim():String(content||'')}
-    function normalizeModule(item){const content=String(item.content||item.conteudo||'');return {id:Number(item.id),title:item.title||item.titulo||`Módulo ${item.id}`,summary:clean(item.summary||item.resumo||content,420),content:mainContent(content),images:imagePromptBlock(content),charCount:Number(item.charCount||content.length||0),source:item.source||''}}
-    function moduleCard(module){return `<article class="module" id="modulo-${module.id}"><div class="module-number">Módulo ${String(module.id).padStart(2,'0')}</div><h2>${escapeHtml(module.title)}</h2><p class="summary">${escapeHtml(module.summary||'Conteúdo completo extraído do PDF enviado.')}</p><details open><summary>Conteúdo completo do módulo (${module.charCount.toLocaleString('pt-BR')} caracteres)</summary><div class="content-text">${escapeHtml(module.content)}</div></details>${module.images?`<details><summary>Sugestões de imagens do módulo</summary><div class="image-prompts">${escapeHtml(module.images)}</div></details>`:''}</article>`}
-    function navItem(module){return `<a href="#modulo-${module.id}">${String(module.id).padStart(2,'0')} — ${escapeHtml(module.title)}</a>`}
+    function normalizeModule(item){const content=String(item.content||item.conteudo||'');return{id:Number(item.id),title:item.title||item.titulo||`Módulo ${item.id}`,summary:clean(item.summary||item.resumo||content,420),content:mainContent(content),images:imagePromptBlock(content),charCount:Number(item.charCount||content.length||0),source:item.source||''}}
+    function markerMatches(raw){const re=/CURSO\s+DE\s+BORDADO\s*[-–—]\s*M[ÓO]DULO\s+(\d+)/gi;return[...String(raw||'').matchAll(re)].map(m=>({id:Number(m[1]),index:m.index}))}
+    function headingMatches(raw){const start=Math.max(0,String(raw||'').search(/CURSO\s+DE\s+BORDADO/i));const slice=String(raw||'').slice(start);const re=/(?:^|\n)\s*M[ÓO]DULO\s+(?:[IVXLCDM]+|\d+)\s*:/gi;return[...slice.matchAll(re)].map((m,i)=>({id:i+1,index:start+m.index}))}
+    function splitByMarks(raw,marks){return marks.map((mark,index)=>{const id=mark.id||index+1,start=mark.index,end=index+1<marks.length?marks[index+1].index:raw.length,content=raw.slice(start,end).trim(),lines=content.split(/\r?\n/).map(line=>line.trim()).filter(Boolean);let title=(lines.find(line=>/^m[oó]dulo\s+/i.test(line)&&line.length>10)||lines.find(line=>line.length>24&&!/^curso\s+de\s+bordado/i.test(line))||`Módulo ${id}`).replace(/^M[oó]dulo\s+[IVXLCDM\d]+\s*[:\-]?\s*/i,'').trim();let summary=clean(lines.filter(line=>!/^curso/i.test(line)&&!/^m[oó]dulo/i.test(line)&&!/^[0-9]+\./.test(line)&&!/^[-—]{3,}$/.test(line)).slice(0,4).join(' '),420);return normalizeModule({id,title,summary,content})}).slice(0,30)}
+    function splitModules(text){const raw=String(text||'');let marks=markerMatches(raw);if(marks.length<25)marks=headingMatches(raw);if(marks.length<25)throw new Error(`Encontrei apenas ${marks.length} marcadores de módulo no JSON.`);return splitByMarks(raw,marks)}
+    function moduleCard(module){return`<article class="module" id="modulo-${module.id}"><div class="module-number">Módulo ${String(module.id).padStart(2,'0')}</div><h2>${escapeHtml(module.title)}</h2><p class="summary">${escapeHtml(module.summary||'Conteúdo completo extraído do PDF enviado.')}</p><details open><summary>Conteúdo completo do módulo (${module.charCount.toLocaleString('pt-BR')} caracteres)</summary><div class="content-text">${escapeHtml(module.content)}</div></details>${module.images?`<details><summary>Sugestões de imagens do módulo</summary><div class="image-prompts">${escapeHtml(module.images)}</div></details>`:''}</article>`}
+    function navItem(module){return`<a href="#modulo-${module.id}">${String(module.id).padStart(2,'0')} — ${escapeHtml(module.title)}</a>`}
     function render(list=modules){root.innerHTML=list.map(moduleCard).join('');nav.innerHTML=list.map(navItem).join('');count.textContent=`${list.length} módulo${list.length===1?'':'s'}`;statusBox.textContent=list.length?'Conteúdo completo carregado.':'Nenhum módulo encontrado para a busca.'}
-    function filterModules(){const query=search.value.trim().toLowerCase();const filtered=modules.filter(module=>(module.title+' '+module.summary+' '+module.content+' '+module.images).toLowerCase().includes(query));render(filtered)}
-    async function loadCourse(){try{const indexResponse=await fetch('/api/course/index',{cache:'no-store'});if(!indexResponse.ok)throw new Error('Não consegui abrir /api/course/index');const indexData=await indexResponse.json();const list=(indexData.modules||[]).slice(0,30);if(list.length<30)throw new Error(`API retornou apenas ${list.length} módulos`);const details=await Promise.all(list.map(async item=>{const response=await fetch(`/api/course/module?id=${item.id}`,{cache:'no-store'});if(!response.ok)throw new Error(`Falha ao abrir módulo ${item.id}`);return normalizeModule(await response.json())}));modules=details.sort((a,b)=>a.id-b.id);heroDesc.textContent=`Conteúdo real carregado: ${modules.length} módulos completos via API do curso.`;render(modules)}catch(error){statusBox.textContent='Erro ao carregar curso: '+error.message;root.innerHTML='<article class="module"><h2>Erro ao carregar o conteúdo</h2><p>'+escapeHtml(error.message)+'</p></article>'}}
+    function filterModules(){const query=search.value.trim().toLowerCase();render(modules.filter(module=>(module.title+' '+module.summary+' '+module.content+' '+module.images).toLowerCase().includes(query)))}
+    async function loadCourse(){try{const dataResponse=await fetch('/data/curso-extraido.json',{cache:'no-store'});if(dataResponse.ok){const data=await dataResponse.json();modules=splitModules(data.texto||data.text||'');heroDesc.textContent=`Conteúdo real carregado: ${modules.length} módulos, ${data.paginas||160} páginas e ${(data.totalCaracteres||data.texto?.length||0).toLocaleString('pt-BR')} caracteres.`;return render(modules)}throw new Error('JSON estático indisponível')}catch(firstError){try{const indexResponse=await fetch('/api/course/index',{cache:'no-store'});if(!indexResponse.ok)throw new Error('Não consegui abrir /api/course/index');const indexData=await indexResponse.json();const list=(indexData.modules||[]).slice(0,30);const details=await Promise.all(list.map(async item=>{const response=await fetch(`/api/course/module?id=${item.id}`,{cache:'no-store'});if(!response.ok)throw new Error(`Falha ao abrir módulo ${item.id}`);return normalizeModule(await response.json())}));modules=details.sort((a,b)=>a.id-b.id);if(modules.some(m=>/Conteúdo real ainda não carregado/i.test(m.content)))throw new Error('API retornou fallback, não o curso real.');heroDesc.textContent=`Conteúdo carregado via API: ${modules.length} módulos.`;render(modules)}catch(error){statusBox.textContent='Erro ao carregar curso: '+error.message;root.innerHTML='<article class="module"><h2>Erro ao carregar o conteúdo</h2><p>'+escapeHtml(error.message)+'</p></article>'}}}
     search.addEventListener('input',filterModules);loadCourse();
   </script>
 </body>
