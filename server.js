@@ -1,40 +1,194 @@
-const http=require('http');
-const https=require('https');
-const fs=require('fs');
-const path=require('path');
-const crypto=require('crypto');
-const zlib=require('zlib');
-const ROOT=__dirname,PORT=process.env.PORT||3000;
-const RAW='https://raw.githubusercontent.com/natanrocha2672-droid/Gerador-Power/main/data/curso-extraido.json';
-let cache=null,source='fallback',embedded=null,generated=null;
-try{embedded=require('./data/curso-extraido.json')}catch{}
-try{generated=require('./course-data.generated.js')}catch{}
-const TITLES=['Arqueologia Têxtil e as Origens do Bordado','Opus Anglicanum e Sacralidade Medieval','Renascimento, Modelbooks e Blackwork','Era Industrial e Máquinas de Bordar','Fibras Naturais e Sintéticas','Ergonomia e Bastidor Profissional','Morfologia dos Pontos','Needle Painting e Degradê','Bordado Branco e Hardanger','Crewel e Estilo Jacobino','Goldwork I: Couching e Or Nué','Goldwork II: Relevo e Purl','Shisha e Espelhamento','Sashiko e Kogin','Zardosi Imperial','Lunéville e Tambour','Pedrarias e Paetês','Stumpwork e Bordado em Relevo','Bordado Brasileiro','Rendas de Agulha e Ponto de Veneza','Conservação e Restauro Têxtil','Design de Padrões','Digitalização e Bordado Computadorizado','Gestão de Ateliê','Curadoria e Exposição','Bordado na Arte Contemporânea','Materiais Não Convencionais','Alfaiataria e Bordado','Fotografia e Documentação Técnica','Projeto Final: Coleção Autoral'];
-function clean(v,n=4000){return String(v||'').replace(/\s+/g,' ').trim().slice(0,n)}
-function esc(v){return String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function slug(v){return clean(v,120).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')||'curso'}
-function hash(v){return crypto.createHash('sha256').update(String(v)).digest('hex')}
-function json(res,st,data,cc='no-store'){res.writeHead(st,{'Content-Type':'application/json; charset=utf-8','Cache-Control':cc});res.end(JSON.stringify(data))}
-function body(req,lim=2e6){return new Promise((ok,bad)=>{let b='';req.on('data',c=>{b+=c;if(Buffer.byteLength(b)>lim){bad(Error('Payload muito grande'));req.destroy()}});req.on('end',()=>ok(b));req.on('error',bad)})}
-function get(url,red=0){return new Promise((ok,bad)=>{let r=https.get(url,{headers:{'User-Agent':'gerador-power','Accept':'application/json,*/*'}},res=>{if([301,302,303,307,308].includes(res.statusCode)&&res.headers.location&&red<5){res.resume();return ok(get(new URL(res.headers.location,url).toString(),red+1))}let d='';res.setEncoding('utf8');res.on('data',c=>d+=c);res.on('end',()=>res.statusCode>=200&&res.statusCode<300?ok(d):bad(Error('HTTP '+res.statusCode)))});r.setTimeout(12000,()=>r.destroy(Error('timeout')));r.on('error',bad)})}
-function svg(t){return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760"><rect width="1200" height="760" fill="#205646"/><text x="70" y="590" font-family="Georgia" font-size="42" font-weight="700" fill="white">${esc(t).slice(0,90)}</text><text x="70" y="650" font-family="Arial" font-size="24" fill="white">Referência visual fiel</text></svg>`)}
-function title(c,fb){let a=String(c||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);return clean(a.find(x=>/^m[oó]dulo\s+(?:[ivxlcdm]+|\d+)/i.test(x)&&x.length>10)||a.find(x=>x.length>18&&!/^curso\s+de\s+bordado/i.test(x))||fb,140)}
-function summary(c){let a=String(c||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean).filter(x=>!/^curso\s+de\s+bordado/i.test(x)&&!/^m[oó]dulo\s+(?:[ivxlcdm]+|\d+)/i.test(x)&&!/^[-—]{3,}$/.test(x));return clean(a.slice(0,3).join(' '),320)}
-function kit(m){return{moduleId:m.id,title:m.title,visualIntent:`Representar ${m.title} com técnica real, material têxtil e textura visível.`,searchQueries:[m.title,'hand embroidery macro needle thread fabric','embroidery textile craft close up'],fallbackImage:m.fallbackImage,authenticityChecks:['Mostrar tecido, fio, agulha, ponto, bastidor ou peça real.','Evitar imagem genérica que não prove o conteúdo.','Legendar por que a imagem representa o módulo.'],storyboard:[{label:'Material',text:'fios, tecido e ferramentas'},{label:'Técnica',text:'ponto e movimento'},{label:'Resultado',text:'peça final'}]}}
-function deco(m){m.imageQueries=m.imageQueries||[m.title,'hand embroidery macro needle thread fabric'];m.fallbackImage=m.fallbackImage||svg(m.title);m.visualKit=kit(m);return m}
-function fromText(txt,src){let raw=String(txt||''),marks=[...raw.matchAll(/CURSO\s+DE\s+BORDADO\s*-\s*M[ÓO]DULO\s+(\d+)/gi)];if(!marks.length)throw Error('Texto sem marcadores de módulo');let mods=marks.map((mm,i)=>{let id=Number(mm[1]||i+1),start=mm.index,end=i+1<marks.length?marks[i+1].index:raw.length,c=raw.slice(start,end).trim();return deco({id,title:title(c,TITLES[id-1]||`Módulo ${id}`),summary:summary(c),content:c,charCount:c.length,source:src+'-texto'})}).filter(x=>x.id&&x.content);if(mods.length<30)throw Error(`Texto incompleto: ${mods.length}/30 módulos`);return mods.slice(0,30)}
-function norm(p,src){if(p&&typeof p.texto==='string')return fromText(p.texto,src);if(p&&typeof p.text==='string')return fromText(p.text,src);let arr=p?.modules||p?.modulos||p;if(!Array.isArray(arr))throw Error('Formato de curso inválido');let mods=arr.map((x,i)=>{let c=String(x.content||x.conteudo||''),id=Number(x.id||i+1);return deco({id,title:title(c,x.title||x.titulo||TITLES[id-1]||`Módulo ${id}`),summary:clean(x.summary||x.resumo||summary(c),320),content:c,charCount:Number(x.charCount||x.totalCaracteres||c.length),source:x.source||src,imageQueries:x.imageQueries,fallbackImage:x.fallbackImage})}).filter(x=>x.id&&x.content);if(!mods.length)throw Error('Curso vazio');return mods}
-function fb(){source='fallback';return TITLES.map((t,i)=>deco({id:i+1,title:t,summary:'Módulo do curso de bordado.',content:t+'\n\nConteúdo real ainda não carregado.',charCount:t.length,source:'fallback'}))}
-function generatedData(){if(!generated)throw Error('sem generated');let p=JSON.parse(zlib.gunzipSync(Buffer.from(generated,'base64')).toString('utf8'));let m=norm(p,'generated-course-data');source='generated-course-data';return m}
-function localJson(){let p=embedded,how=p?'require-start':null;if(!p){try{p=require('./data/curso-extraido.json');how='require-late'}catch(e){let f=path.join(ROOT,'data','curso-extraido.json');if(!fs.existsSync(f))throw Error('json não encontrado: '+e.message);p=JSON.parse(fs.readFileSync(f,'utf8'));how='fs'}}let m=norm(p,'pdf-extraido');if(m.length<30)throw Error('JSON incompleto');source='pdf-extraido-'+how;return m}
-function localB64(){let dir=path.join(ROOT,'data');if(!fs.existsSync(dir))throw Error('sem data');let files=fs.readdirSync(dir).filter(f=>/^course-data\.b64\./.test(f)).sort();if(!files.length)throw Error('sem b64');let raw=files.map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('').replace(/\s+/g,'');let p=JSON.parse(zlib.gunzipSync(Buffer.from(raw,'base64')).toString('utf8'));let m=norm(p,'uploaded-course-data');source='uploaded-course-data';return m}
-async function remote(){let p=JSON.parse(await get(RAW));let m=norm(p,'pdf-extraido-remote');source='pdf-extraido-remote';return m}
-async function course(){if(cache)return cache;try{return cache=generatedData()}catch(e){console.warn('generated:',e.message)}try{return cache=localJson()}catch(e){console.warn('local json:',e.message)}try{return cache=localB64()}catch(e){console.warn('local b64:',e.message)}try{return cache=await remote()}catch(e){console.error('remote:',e.message)}return cache=fb()}
-async function apiCourse(req,res){let u=new URL(req.url,`http://${req.headers.host}`),c=await course();if(u.pathname==='/api/course/index')return json(res,200,{count:c.length,source,modules:c.map(m=>({id:m.id,title:m.title,summary:m.summary,charCount:m.charCount,source:m.source,visualKit:m.visualKit,imageEndpoint:`/api/course/module?id=${m.id}`}))});if(u.pathname==='/api/course/module'){let id=Number(u.searchParams.get('id')||1),m=c.find(x=>x.id===id)||c[id-1];return m?json(res,200,{...m,imageEndpoint:`/api/course/image?id=${m.id}`}):json(res,404,{error:'Módulo não encontrado'})}if(u.pathname==='/api/course/image'){let id=Number(u.searchParams.get('id')||1),m=c.find(x=>x.id===id)||c[0];return json(res,200,{moduleId:m.id,moduleTitle:m.title,query:m.title,image:{url:m.fallbackImage,thumb:m.fallbackImage,photographer:'Fallback local',alt:m.title,fallback:true},visualKit:m.visualKit,warning:'Usando fallback local por fidelidade visual'},'public, max-age=86400')}return json(res,404,{error:'Endpoint não encontrado'})}
-function outline(p={}){let topic=clean(p.topic||p.tema||'Novo curso profissional',120),aud=clean(p.audience||p.publico||'alunos iniciantes',220),count=Math.min(30,Math.max(3,Number(p.modulesCount||p.modulos||8)));let mods=Array.from({length:count},(_,i)=>({id:i+1,title:i?`Etapa ${i+1} de ${topic}`:`Fundamentos de ${topic}`,summary:`Etapa para ${aud} evoluir em ${topic} com prática e visual fiel.`,lessons:['Contexto visual','Demonstração prática','Exercício guiado','Checklist de fidelidade'],deliverables:['Resumo visual','Exercício prático','Checklist'],visualBrief:{scene:`Ateliê realista mostrando ${topic}`,mustShow:['material correto','ferramenta em uso','resultado visível'],avoid:['imagem genérica']},estimatedMinutes:45}));return{courseId:'local-'+hash(JSON.stringify({topic,aud,count})).slice(0,12),title:`Curso Completo de ${topic}`,slug:slug(topic),promise:`Ao final, ${aud} serão capazes de praticar ${topic}.`,metadata:{topic,audience:aud,level:p.level||'Do zero ao avançado',tone:p.tone||'Professor acolhedor',objective:p.objective||'',modulesCount:count,sourceMode:p.sourceMode||'Tema + busca confiável',visualFidelity:p.visualFidelity||'Alta fidelidade visual',referenceMaterial:p.referenceMaterial||'',sourceConfidence:p.referenceMaterial?'Média/alta: há material de referência informado':'Média: precisa validação humana'},visualLanguage:{mood:'visual de ateliê, textura real e cartões de referência',imageRules:['usar imagens que mostrem a técnica','legendar função de cada imagem'],fidelityChecklist:['O material está correto?','A imagem prova a técnica?','O passo é verificável?']},modules:mods,assets:['Mini-site visual','Apostila HTML','Quizzes'],source:'local-fallback'}}
-function modText(p={}){let o=p.outline||outline(p),m=p.module||o.modules?.[Number(p.moduleId||1)-1]||o.modules?.[0]||{};return{moduleId:m.id||1,title:m.title||'Módulo',summary:m.summary||'',visualBrief:m.visualBrief,content:[`# ${m.title||'Módulo'}`,'## Objetivo',m.summary||'','## Aula completa','Mostre o material, explique a técnica, faça demonstração e peça uma prática curta.','## Checklist','- Material correto\n- Imagem fiel\n- Passo executável'].join('\n\n'),exercise:'Produza uma mini-entrega visual.',checklist:['Material correto','Imagem alinhada','Resultado verificável'],source:'local-fallback'}}
-function quiz(p={}){let m=p.module||{},t=m.title||'Módulo';return{moduleId:m.id||p.moduleId||1,title:'Quiz — '+t,questions:Array.from({length:5},(_,i)=>({id:i+1,type:'multiple_choice',question:`Qual atitude aumenta a fidelidade visual no aprendizado de ${t}?`,options:['Usar imagem que prove o conteúdo','Escolher foto bonita aleatória','Ignorar materiais reais','Trocar técnica por decoração'],answer:0,explanation:'A imagem deve confirmar material, técnica e resultado.'})),source:'local-fallback'}}
-function courseHtml(c){return`<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(c.title)}</title><style>body{font-family:Arial;margin:0;background:#f6eddf;color:#21160f}.hero{padding:48px 22px;background:#21160f;color:white}.wrap{max-width:980px;margin:auto;padding:28px 22px}.card{background:#fffaf1;border-radius:24px;padding:22px;margin:16px 0}h1,h2{font-family:Georgia}</style><section class="hero"><div class="wrap"><h1>${esc(c.title||'Curso')}</h1><p>${esc(c.promise||'')}</p></div></section><main class="wrap">${(c.modules||[]).map(m=>`<article class="card"><h2>Módulo ${m.id}: ${esc(m.title)}</h2><p>${esc(m.summary||'')}</p></article>`).join('')}</main></html>`}
-async function apiGen(req,res){if(req.method!=='POST')return json(res,405,{error:'Use POST'});let p={};try{p=JSON.parse(await body(req))}catch{return json(res,400,{error:'JSON inválido'})}let u=new URL(req.url,`http://${req.headers.host}`);if(u.pathname==='/api/course/generate-outline')return json(res,200,outline(p));if(u.pathname==='/api/course/generate-module')return json(res,200,modText(p));if(u.pathname==='/api/course/generate-quiz')return json(res,200,quiz(p));if(u.pathname==='/api/course/generate-pdf'){let c=p.course||p.outline||outline(p);return json(res,200,{fileName:slug(c.title||'curso')+'.html',html:courseHtml(c),note:'MVP exporta HTML visual imprimível.'})}if(u.pathname==='/api/course/publish'){let c=p.course||p.outline,id=c?.courseId||'published-'+hash(JSON.stringify(c||p)).slice(0,12);return json(res,200,{published:true,courseId:id,url:'/gerador?course='+encodeURIComponent(id),message:'Curso salvo para prévia do MVP.'})}return json(res,404,{error:'Endpoint não encontrado'})}
-function serve(req,res){let u=new URL(req.url,`http://${req.headers.host}`),p=decodeURIComponent(u.pathname);if(p==='/'||p==='/curso')p='/curso-completo.html';if(p==='/gerador')p='/gerador.html';let f=path.normalize(path.join(ROOT,p));if(!f.startsWith(ROOT)){res.writeHead(403);return res.end('Forbidden')}fs.readFile(f,(e,d)=>{if(e){res.writeHead(404,{'Content-Type':'text/plain; charset=utf-8'});return res.end('Arquivo não encontrado.')}res.writeHead(200,{'Content-Type':p.endsWith('.html')?'text/html; charset=utf-8':'application/octet-stream','Cache-Control':p.endsWith('.html')?'no-store':'public, max-age=3600'});res.end(d)})}
-http.createServer((req,res)=>{if(req.url.startsWith('/api/course/generate-')||req.url.startsWith('/api/course/publish'))return apiGen(req,res);if(req.url.startsWith('/api/course/'))return apiCourse(req,res);if(req.url.startsWith('/api/pexels'))return json(res,200,{query:'fallback',images:[{url:svg('Referência visual'),thumb:svg('Referência visual'),photographer:'Fallback local',fallback:true}]});if(req.url.startsWith('/api/tts/status'))return json(res,200,{cached:0,mode:'disabled-minimal'});if(req.url.startsWith('/api/atelier'))return json(res,200,{text:'Ateliê em modo mínimo: use o conteúdo do módulo e o checklist de fidelidade visual.'});serve(req,res)}).listen(PORT,()=>console.log('Gerador Power rodando em http://localhost:'+PORT));
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+
+const ROOT = __dirname;
+const PORT = process.env.PORT || 3000;
+const COURSE_FILE = path.join(ROOT, 'data', 'curso-extraido.json');
+let courseCache = null;
+
+function send(res, status, body, type = 'text/plain; charset=utf-8') {
+  res.writeHead(status, { 'Content-Type': type, 'Cache-Control': 'no-store' });
+  res.end(body);
+}
+
+function sendJson(res, status, data) {
+  send(res, status, JSON.stringify(data), 'application/json; charset=utf-8');
+}
+
+function clean(value, max = 500) {
+  return String(value || '').replace(/\s+/g, ' ').trim().slice(0, max);
+}
+
+function escapeHtml(value) {
+  return String(value || '').replace(/[&<>"']/g, char => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  }[char]));
+}
+
+function staticType(filePath) {
+  if (filePath.endsWith('.html')) return 'text/html; charset=utf-8';
+  if (filePath.endsWith('.css')) return 'text/css; charset=utf-8';
+  if (filePath.endsWith('.js')) return 'application/javascript; charset=utf-8';
+  if (filePath.endsWith('.json')) return 'application/json; charset=utf-8';
+  if (filePath.endsWith('.svg')) return 'image/svg+xml; charset=utf-8';
+  if (filePath.endsWith('.png')) return 'image/png';
+  if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) return 'image/jpeg';
+  return 'application/octet-stream';
+}
+
+function serveStatic(req, res) {
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  let pathname = decodeURIComponent(url.pathname);
+
+  if (pathname === '/') pathname = '/index.html';
+  if (pathname === '/curso') pathname = '/index.html';
+
+  const safePath = path.normalize(pathname).replace(/^\.\.(\/|\\|$)/, '');
+  const filePath = path.join(ROOT, safePath);
+
+  if (!filePath.startsWith(ROOT)) {
+    return send(res, 403, 'Acesso negado');
+  }
+
+  if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
+    return send(res, 404, 'Arquivo não encontrado');
+  }
+
+  send(res, 200, fs.readFileSync(filePath), staticType(filePath));
+}
+
+function titleFromContent(content, fallback) {
+  const lines = String(content || '')
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean);
+
+  const heading = lines.find(line => /^M[óo]dulo\s+(?:[IVXLCDM]+|\d+)/i.test(line) && line.length > 10);
+  if (heading) {
+    return clean(heading.replace(/^M[óo]dulo\s+(?:[IVXLCDM]+|\d+)\s*[:\-]?\s*/i, ''), 160);
+  }
+
+  return clean(lines.find(line => line.length > 20) || fallback, 160);
+}
+
+function summaryFromContent(content) {
+  const lines = String(content || '')
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean)
+    .filter(line => !/^CURSO\s+DE\s+BORDADO/i.test(line))
+    .filter(line => !/^M[óo]dulo\s+(?:[IVXLCDM]+|\d+)/i.test(line))
+    .filter(line => !/^[-—]{3,}$/.test(line));
+
+  return clean(lines.slice(0, 4).join(' '), 420);
+}
+
+function splitModules(text) {
+  const raw = String(text || '');
+  const marker = /CURSO\s+DE\s+B\s*O\s*R\s*D\s*A\s*D\s*O\s*[-–—]\s*M\s*[ÓO]\s*D\s*U\s*L\s*O\s+(\d+)/gi;
+  const matches = [...raw.matchAll(marker)].map(match => ({
+    id: Number(match[1]),
+    index: match.index,
+  }));
+
+  if (matches.length < 30) {
+    throw new Error(`Foram encontrados apenas ${matches.length} módulos no JSON real.`);
+  }
+
+  return matches.slice(0, 30).map((match, index) => {
+    const start = match.index;
+    const end = index + 1 < matches.length ? matches[index + 1].index : raw.length;
+    const content = raw.slice(start, end).trim();
+    const id = match.id || index + 1;
+    const title = titleFromContent(content, `Módulo ${id}`);
+    return {
+      id,
+      title,
+      summary: summaryFromContent(content),
+      content,
+      charCount: content.length,
+      source: 'data/curso-extraido.json',
+    };
+  });
+}
+
+function loadCourse() {
+  if (courseCache) return courseCache;
+  if (!fs.existsSync(COURSE_FILE)) {
+    throw new Error('Arquivo data/curso-extraido.json não encontrado no deploy.');
+  }
+
+  const data = JSON.parse(fs.readFileSync(COURSE_FILE, 'utf8'));
+  const modules = splitModules(data.texto || data.text || '');
+  courseCache = {
+    fonte: data.fonte,
+    paginas: data.paginas,
+    totalCaracteres: data.totalCaracteres,
+    totalModulos: modules.length,
+    modules,
+  };
+  return courseCache;
+}
+
+function apiCourse(req, res) {
+  try {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const course = loadCourse();
+
+    if (url.pathname === '/api/course/index') {
+      return sendJson(res, 200, {
+        count: course.modules.length,
+        source: 'real-json',
+        fonte: course.fonte,
+        paginas: course.paginas,
+        totalCaracteres: course.totalCaracteres,
+        modules: course.modules.map(module => ({
+          id: module.id,
+          title: module.title,
+          summary: module.summary,
+          charCount: module.charCount,
+          source: module.source,
+          imageEndpoint: `/api/course/module?id=${module.id}`,
+        })),
+      });
+    }
+
+    if (url.pathname === '/api/course/module') {
+      const id = Number(url.searchParams.get('id') || 1);
+      const module = course.modules.find(item => item.id === id) || course.modules[id - 1];
+      if (!module) return sendJson(res, 404, { error: 'Módulo não encontrado' });
+      return sendJson(res, 200, module);
+    }
+
+    return sendJson(res, 404, { error: 'Endpoint não encontrado' });
+  } catch (error) {
+    return sendJson(res, 500, {
+      error: 'Falha ao carregar curso real',
+      detail: error.message,
+    });
+  }
+}
+
+function generateFallbackResponse(req, res) {
+  return sendJson(res, 200, {
+    error: 'Gerador em modo mínimo',
+    message: 'O curso real fica disponível em /api/course/index e /api/course/module?id=1.',
+  });
+}
+
+http.createServer((req, res) => {
+  if (req.url.startsWith('/api/course/index') || req.url.startsWith('/api/course/module')) {
+    return apiCourse(req, res);
+  }
+
+  if (req.url.startsWith('/api/')) {
+    return generateFallbackResponse(req, res);
+  }
+
+  return serveStatic(req, res);
+}).listen(PORT, () => console.log('Gerador Power rodando em http://localhost:' + PORT));
