@@ -15,8 +15,8 @@
     }
   ],
   "rewrites": [
-    { "source": "/", "destination": "/curso-completo.html" },
-    { "source": "/curso", "destination": "/curso-completo.html" },
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/curso", "destination": "/index.html" },
     { "source": "/gerador", "destination": "/gerador.html" },
     { "source": "/api/:path*", "destination": "/server.js" }
   ]
