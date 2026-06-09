@@ -5,17 +5,17 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>O Código da Agulha — Curso de Bordado</title>
   <meta name="description" content="Curso de bordado com módulos organizados para estudo, prática e impressão.">
-  <link rel="stylesheet" href="style.css">
+  <style>
+    :root{--bg:#fbf6ee;--paper:#fffaf2;--ink:#25170e;--muted:#715b45;--line:#ead9c2;--accent:#b3543c;--dark:#1d130b}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font-family:Arial,sans-serif;line-height:1.65}.hero{background:linear-gradient(135deg,var(--dark),#3c2416);color:white;padding:56px 18px;border-bottom:8px solid var(--accent)}.wrap{max-width:1050px;margin:auto}.badge{display:inline-block;background:#205646;color:white;border-radius:999px;padding:6px 12px;font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em}h1{font-family:Georgia,serif;font-size:clamp(2.4rem,10vw,5rem);line-height:1;margin:18px 0}h2{font-family:Georgia,serif;margin:0 0 10px}.hero p{max-width:760px;font-size:1.15rem;color:#f7ead8}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:22px}.actions a,.actions button{border:0;border-radius:12px;padding:12px 16px;background:white;color:var(--dark);font-weight:700;text-decoration:none;box-shadow:0 8px 20px rgba(0,0,0,.15)}.layout{max-width:1180px;margin:0 auto;padding:28px 16px;display:grid;grid-template-columns:280px 1fr;gap:24px}.sidebar{align-self:start;position:sticky;top:12px;background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:16px;box-shadow:0 12px 30px rgba(40,20,10,.08)}input{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px;font-size:1rem;background:white}.count,.status{margin:12px 0;color:var(--muted);font-weight:700}.nav{display:grid;gap:6px;max-height:68vh;overflow:auto}.nav a{display:block;text-decoration:none;color:var(--ink);border-radius:10px;padding:8px 10px}.nav a:hover{background:#f0e2ce}.module{background:white;border:1px solid var(--line);border-radius:24px;padding:22px;margin:0 0 18px;box-shadow:0 12px 30px rgba(40,20,10,.07)}.module-number{display:inline-block;background:#f0e2ce;color:var(--accent);border-radius:10px;padding:6px 10px;font-weight:800;margin-bottom:12px}.practice{background:#fbf6ee;border-left:5px solid var(--accent);padding:12px 14px;border-radius:12px;margin-top:12px}footer{max-width:1180px;margin:20px auto 60px;padding:0 16px;color:var(--muted)}@media(max-width:800px){.layout{display:block}.sidebar{position:static;margin-bottom:20px}h1{font-size:3rem}}@media print{.sidebar,.actions{display:none}.layout{display:block}.module{break-inside:avoid}}
+  </style>
 </head>
 <body>
   <header class="hero">
     <div class="wrap">
       <span class="badge">Curso pronto</span>
       <h1>O Código da Agulha</h1>
-      <p>
-        Curso de bordado com módulos consolidados. Este site apresenta o conteúdo pronto
-        para estudo, prática e impressão, com navegação simples e carregamento seguro.
-      </p>
+      <p>Curso de bordado com módulos consolidados. Este site apresenta o conteúdo pronto para estudo, prática e impressão, com navegação simples e carregamento seguro.</p>
       <div class="actions">
         <button type="button" onclick="window.print()">Imprimir / salvar PDF</button>
         <a href="#modulos">Ver módulos</a>
@@ -27,7 +27,7 @@
     <aside class="sidebar">
       <input id="search" placeholder="Pesquisar módulo, aula ou técnica" aria-label="Pesquisar módulo">
       <div id="count" class="count">Carregando...</div>
-      <nav id="nav" aria-label="Lista de módulos"></nav>
+      <nav id="nav" class="nav" aria-label="Lista de módulos"></nav>
     </aside>
 
     <section id="modulos" class="content">
@@ -36,10 +36,18 @@
     </section>
   </main>
 
-  <footer>
-    <p>O Código da Agulha — curso pronto de bordado.</p>
-  </footer>
+  <footer><p>O Código da Agulha — curso pronto de bordado.</p></footer>
 
-  <script src="app.js"></script>
+  <script>
+    const moduleNames=['Fundamentos do Bordado','Materiais e Ferramentas','Preparação do Bastidor','Transferência do Risco','Início sem Nós','Ponto Alinhavo','Ponto Atrás','Ponto Haste','Ponto Corrente','Ponto Cheio','Ponto Matiz','Nó Francês','Ponto Rococó','Ponto Margarida','Folhas e Ramos','Sombra e Volume','Flores Bordadas','Letras e Monogramas','Avesso Limpo','Erros Comuns','Sashiko e Pontos Rítmicos','Bordado Livre','Aplicação em Roupas','Composição de Cores','Bastidor Decorativo','Pano de Prato','Peça Personalizada','Fotografia do Bordado','Portfólio Artesanal','Projeto Final'];
+    const modules=moduleNames.map((title,index)=>({id:index+1,title,summary:`Estudo guiado sobre ${title.toLowerCase()}, com prática progressiva e checklist de acabamento.`,practice:`Faça uma amostra pequena aplicando ${title.toLowerCase()} e registre o resultado antes de avançar.`}));
+    const root=document.getElementById('modules'),count=document.getElementById('count'),search=document.getElementById('search'),nav=document.getElementById('nav'),statusBox=document.getElementById('status');
+    function escapeHtml(value){return String(value||'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))}
+    function moduleCard(module){return `<article class="module" id="modulo-${module.id}"><div class="module-number">Módulo ${module.id}</div><h2>${escapeHtml(module.title)}</h2><p>${escapeHtml(module.summary)}</p><div class="practice"><strong>Prática:</strong> ${escapeHtml(module.practice)}</div></article>`}
+    function navItem(module){return `<a href="#modulo-${module.id}">${String(module.id).padStart(2,'0')} — ${escapeHtml(module.title)}</a>`}
+    function render(list=modules){root.innerHTML=list.map(moduleCard).join('');nav.innerHTML=list.map(navItem).join('');count.textContent=`${list.length} módulo${list.length===1?'':'s'}`;statusBox.textContent=list.length?'Módulos carregados com sucesso.':'Nenhum módulo encontrado para a busca.'}
+    function filterModules(){const query=search.value.trim().toLowerCase();const filtered=modules.filter(module=>module.title.toLowerCase().includes(query)||module.summary.toLowerCase().includes(query)||module.practice.toLowerCase().includes(query));render(filtered)}
+    search.addEventListener('input',filterModules);render();
+  </script>
 </body>
 </html>
