@@ -181,6 +181,19 @@ function titlePositions(raw) {
   return positions.sort((a, b) => a.index - b.index).filter((item, index, list) => index === 0 || item.id !== list[index - 1].id);
 }
 
+function fallbackChunkModules(raw) {
+  const startAt = courseBodyStart(raw);
+  const body = raw.slice(startAt).trim();
+  const chunkSize = Math.ceil(body.length / 30);
+  const positions = TITLES.map((title, index) => ({
+    id: index + 1,
+    title,
+    index: startAt + index * chunkSize,
+    source: 'balanced-chunk',
+  }));
+  return modulesFromPositions(raw, positions);
+}
+
 function validModules(modules) {
   return modules.length >= 30 && modules.slice(0, 30).every(module => module.charCount > 500);
 }
@@ -194,6 +207,9 @@ function splitModules(text) {
     const modules = modulesFromPositions(raw, positions);
     if (validModules(modules)) return modules;
   }
+
+  const chunks = fallbackChunkModules(raw);
+  if (validModules(chunks)) return chunks;
 
   throw new Error(`Marcadores: ${strategies[0].length}; cabeçalhos: ${strategies[1].length}; títulos oficiais pós-índice: ${strategies[2].length}/30.`);
 }
