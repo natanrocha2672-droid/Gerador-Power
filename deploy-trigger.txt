@@ -1,0 +1,2 @@
+Forçando novo deploy na Vercel em 2026-06-23.
+O arquivo lib/bling.ts da branch main já está com quantidade: quantity.
